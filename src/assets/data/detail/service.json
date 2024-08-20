@@ -1,0 +1,27 @@
+{
+    "services": [
+      {
+        "category": "Dịch vụ cho cún",
+        "subcategories": [
+          "Tắm cho cún",
+          "Trông giữ cún",
+          "Cắt tỉa lông cho cún",
+          "Chăm sóc móng cho cún",
+          "Tắm trị liệu cho cún",
+          "Chăm sóc răng miệng cho cún"
+        ]
+      },
+      {
+        "category": "Dịch vụ cho mèo",
+        "subcategories": [
+          "Tắm cho mèo",
+          "Trông giữ mèo",
+          "Cắt tỉa lông cho mèo",
+          "Chăm sóc móng cho mèo",
+          "Tắm trị liệu cho mèo",
+          "Chăm sóc răng miệng cho mèo"
+        ]
+      }
+    ]
+  }
+  

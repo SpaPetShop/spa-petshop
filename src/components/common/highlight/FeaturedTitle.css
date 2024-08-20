@@ -1,0 +1,24 @@
+.feature-title-container {
+  text-align: center;
+}
+
+.feature-title {
+  color: #e89305;
+  font-size: 32px;
+  text-transform: uppercase;
+  font-family: 'iciel-soup-of-justice', sans-serif;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.feature-subtitle {
+  text-align: center;
+  color: #333333;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.feature-title-decorate {
+  width: 12rem; /* Adjust as needed */
+  margin: 10px auto; /* Center the image */
+}

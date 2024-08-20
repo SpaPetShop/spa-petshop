@@ -1,0 +1,119 @@
+/* Booking.module.css */
+
+.bookingForm {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.bookingForm h2,
+.bookingForm h3 {
+  text-align: center;
+  color: #e67e22;
+  margin-bottom: 20px;
+}
+
+.bookingForm label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+.bookingForm input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.bookingForm input[type="number"]::-webkit-outer-spin-button,
+.bookingForm input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none; /* Chrome */
+}
+
+.bookingForm .bookingSubmitButton {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background-color 0.3s ease;
+}
+
+.bookingForm .bookingSubmitButton:hover {
+  background-color: #d35400;
+}
+
+.bookingForm .error {
+  color: red;
+  font-size: 14px;
+  margin-top: -8px; /* Adjusted to position error messages better */
+  margin-bottom: 16px;
+  display: block;
+}
+
+.bookingForm .deliveryOption {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.bookingForm .deliveryOptionAdditional {
+  margin-left: 10px;
+  font-size: 14px;
+  color: #333;
+}
+
+.bookingForm .actionButtons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.bookingForm .navigateButton {
+  padding: 10px 20px;
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background-color 0.3s ease;
+}
+
+.bookingForm .navigateButton:hover {
+  background-color: #d35400;
+}
+
+/* Time Slot Styling */
+.bookingForm .timeSlotContainer {
+  margin-top: 20px;
+}
+
+.bookingForm .timeSlots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: start;
+  gap: 10px; /* Space between time slots */
+  margin-bottom: 10px; /* Space below time slots */
+}
+
+.bookingForm .timeSlots .MuiButton-root {
+  min-width: 60px;
+  padding: 10px;
+}
+
+/* Additional Styling for Disabled Time Slots */
+.bookingForm .timeSlots .MuiButton-root.Mui-disabled {
+  background-color: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+}

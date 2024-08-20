@@ -1,0 +1,18 @@
+.banner-container {
+    background-image: url('../../../assets/images/home/banner.jpg'); /* Adjust the path if necessary */
+    background-size: cover;
+    background-position: center;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .banner-text {
+    color: #ffa500; /* Adjust the color to match your design */
+    font-size: 48px;
+    background-color: rgba(255, 255, 255, 0.7); /* Optional: add a background for better readability */
+    padding: 20px;
+    border-radius: 10px;
+  }
+  

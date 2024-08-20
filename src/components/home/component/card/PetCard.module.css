@@ -1,0 +1,71 @@
+/* PetCard.module.css */
+
+.cardContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.card {
+  width: 100%;
+  height: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative; /* Định vị các nút */
+  overflow: hidden; /* Ẩn các phần tử tràn */
+  transition: transform 0.3s ease;
+}
+
+.cardMedia {
+  height: 200px;
+  object-fit: cover;
+  transition: opacity 0.3s ease; /* Hiệu ứng chuyển đổi làm mờ ảnh */
+}
+
+.cardContent {
+  padding: 16px;
+  text-align: center;
+}
+
+.cardActions {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: space-between;
+  width: 95%;
+  opacity: 0; /* Ẩn các nút ban đầu */
+  transition: opacity 0.3s ease; /* Hiệu ứng mờ dần */
+}
+
+.cardActions .button {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  margin: 0 5px;
+  background-color: rgba(255, 255, 255, 0.8); /* Màu nền trắng với độ mờ */
+  color: #e67e22; /* Màu chữ cam */
+  border: 1px solid #e67e22; /* Viền cam */
+  transition: background-color 0.3s ease;
+}
+
+.cardActions .button:hover {
+  background-color: #e67e22; /* Thay đổi màu nền khi hover */
+  color: white; /* Màu chữ trắng khi hover */
+}
+
+.card:hover .cardMedia {
+  opacity: 0.7; /* Làm mờ ảnh khi hover */
+}
+
+.card:hover .cardActions {
+  opacity: 1; /* Hiển thị các nút khi hover */
+}
+
+.detailButton {
+  text-decoration: none;
+}

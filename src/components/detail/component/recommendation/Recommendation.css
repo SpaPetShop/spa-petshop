@@ -1,0 +1,24 @@
+.recommendation {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    margin-top: 20px;
+}
+
+.recommendation h2 {
+    margin-bottom: 10px;
+}
+
+.recommendation-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.recommendation-item {
+    flex: 1 1 calc(33.333% - 10px);
+    max-width: calc(33.333% - 10px);
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+}

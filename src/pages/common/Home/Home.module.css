@@ -1,0 +1,48 @@
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff6f00; /* màu nổi bật hơn */
+  margin-bottom: 20px;
+  text-align: center;
+  text-transform: uppercase; /* Chữ hoa cho tiêu đề */
+}
+
+.productGrid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.productCard {
+  width: 100%;
+  max-width: 280px;
+  margin: auto;
+}
+
+.gridItem {
+  display: flex;
+  justify-content: center;
+}
+
+.statusText {
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.statusAvailable {
+  color: green;
+}
+
+.statusUnavailable {
+  color: red;
+}

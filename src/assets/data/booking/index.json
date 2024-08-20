@@ -1,0 +1,62 @@
+{
+  "services": [
+    {
+      "category": "Dịch vụ cho cún",
+      "subcategories": [
+        {
+          "name": "Tắm cho cún",
+          "price": "100,000 VND"
+        },
+        {
+          "name": "Trông giữ cún",
+          "price": "500,000 VND"
+        },
+        {
+          "name": "Cắt tỉa lông cho cún",
+          "price": "150,000 VND"
+        },
+        {
+          "name": "Chăm sóc móng cho cún",
+          "price": "80,000 VND"
+        },
+        {
+          "name": "Tắm trị liệu cho cún",
+          "price": "200,000 VND"
+        },
+        {
+          "name": "Chăm sóc răng miệng cho cún",
+          "price": "120,000 VND"
+        }
+      ]
+    },
+    {
+      "category": "Dịch vụ cho mèo",
+      "subcategories": [
+        {
+          "name": "Tắm cho mèo",
+          "price": "90,000 VND"
+        },
+        {
+          "name": "Trông giữ mèo",
+          "price": "500,000 VND"
+        },
+        {
+          "name": "Cắt tỉa lông cho mèo",
+          "price": "150,000 VND"
+        },
+        {
+          "name": "Chăm sóc móng cho mèo",
+          "price": "80,000 VND"
+        },
+        {
+          "name": "Tắm trị liệu cho mèo",
+          "price": "200,000 VND"
+        },
+        {
+          "name": "Chăm sóc răng miệng cho mèo",
+          "price": "120,000 VND"
+        }
+      ]
+    }
+  ]
+}

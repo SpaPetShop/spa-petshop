@@ -152,13 +152,27 @@ const DetailSpaCompoPage: React.FC = () => {
     <Box p={12}>
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Card sx={{ position: "relative", mb: 3 }}>
+          <Card
+            sx={{
+              position: "relative",
+              borderRadius: "20px",
+              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+              backgroundColor: "#fff7e6",
+              padding: "16px",
+            }}
+          >
             <CardMedia
               component="img"
               alt={combo.name}
               height="280"
               image={combo.image[0].imageURL}
               title={combo.name}
+              sx={{
+                borderRadius: "15px",
+                maxHeight: "280px",
+                objectFit: "cover",
+                marginBottom: "16px",
+              }}
             />
             <Chip
               label={combo.status === "AVAILABLE" ? "Có sẵn" : "Hết hàng"}
@@ -195,7 +209,15 @@ const DetailSpaCompoPage: React.FC = () => {
                 color="primary"
                 startIcon={<EventIcon />}
                 fullWidth
-                sx={{ mt: 2 }}
+                sx={{
+                  mt: 2,
+                  borderRadius: "50px",
+                  fontWeight: "bold",
+                  backgroundColor: "#e67e22",
+                  "&:hover": {
+                    backgroundColor: "#cf681b",
+                  },
+                }}
                 onClick={handleBookingSubmit}
               >
                 Đặt lịch
@@ -211,7 +233,18 @@ const DetailSpaCompoPage: React.FC = () => {
                   )
                 }
                 fullWidth
-                sx={{ mt: 1 }}
+                sx={{
+                  mt: 2,
+                  borderRadius: "50px",
+                  fontWeight: "bold",
+                  borderColor: "#e67e22",
+                  color: isInCart ? "#e67e22" : "#fff",
+                  "&:hover": {
+                    backgroundColor: isInCart ? "transparent" : "#cf681b",
+                    color: isInCart ? "#cf681b" : "#fff",
+                    borderColor: isInCart ? "#cf681b" : "",
+                  },
+                }}
                 onClick={handleToggleCart}
               >
                 {isInCart ? "Bỏ khỏi giỏ hàng" : "Thêm vào giỏ hàng"}
@@ -227,7 +260,13 @@ const DetailSpaCompoPage: React.FC = () => {
           <Grid container spacing={2}>
             {combo.supProducts.map((product) => (
               <Grid item xs={12} sm={6} md={4} key={product.id}>
-                <Card sx={{ padding: "8px" }}>
+                <Card
+                  sx={{
+                    borderRadius: "15px",
+                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                    padding: "16px",
+                  }}
+                >
                   <CardMedia
                     component="img"
                     alt={product.name}
@@ -238,12 +277,26 @@ const DetailSpaCompoPage: React.FC = () => {
                         : "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png"
                     }
                     title={product.name}
+                    sx={{
+                      borderRadius: "12px",
+                      objectFit: "cover",
+                      marginBottom: "12px",
+                    }}
                   />
                   <CardContent sx={{ padding: "8px" }}>
-                    <Typography gutterBottom variant="h6" component="div">
+                    <Typography
+                      gutterBottom
+                      variant="h6"
+                      component="div"
+                      sx={{ fontWeight: "bold", fontSize: "16px" }}
+                    >
                       {product.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontSize: "14px", fontWeight: "500" }}
+                    >
                       Giá: {formatCurrency(product.sellingPrice)}
                     </Typography>
                   </CardContent>

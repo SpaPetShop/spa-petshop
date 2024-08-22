@@ -1,5 +1,7 @@
-import { Grid, Box } from "@mui/material";
 import React, { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Grid } from "@mui/material";
+import { toast } from "react-toastify";
 import PetCard from "../../../components/home/component/card/PetCard";
 import FeaturedTitle from "../../../components/common/highlight/FeaturedTitle";
 import styles from "./Home.module.css"; // Import CSS Module
@@ -12,6 +14,7 @@ import {
 import { PaginationType } from "../../../types/CommonType";
 import PetImageGallery from "../../../components/home/component/gallery/PetImageGallery";
 import LoadingComponentVersion2 from "../../../components/common/loading/Backdrop";
+import BookingAPI from "../../../utils/BookingAPI"; // Add this if you need to update order status
 
 const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +30,8 @@ const Home: React.FC = () => {
     total: 0,
     totalPages: 1,
   });
+
+  const location = useLocation();
 
   const fetchAllProduct = useCallback(async () => {
     try {
@@ -49,6 +54,41 @@ const Home: React.FC = () => {
   useEffect(() => {
     fetchAllProduct();
   }, [fetchAllProduct]);
+
+  useEffect(() => {
+    // Parse URL parameters to get the response code
+    const params = new URLSearchParams(location.search);
+    const responseCode = params.get("vnp_ResponseCode");
+
+    if (responseCode) {
+      if (responseCode === "00") {
+        // Payment succeeded
+        toast.success("Thanh toán thành công!");
+
+        const orderId = localStorage.getItem("orderId");
+        if (orderId) {
+          // Optionally, update order status to PAID
+          BookingAPI.updateOrderStatus(orderId, {
+            status: "PAID",
+          }).catch((error) => {
+            console.error("Failed to update order status:", error);
+          });
+
+          localStorage.removeItem("orderId");
+          // remove cart
+          localStorage.removeItem("cart");
+          // reload page to update order status
+          window.location.reload();
+        }
+      } else {
+        // Payment failed
+        toast.error("Thanh toán thất bại. Vui lòng thử lại.");
+      }
+    } else {
+      //  Payment failed
+      toast.error("Thanh toán thất bại. Vui lòng thử lại.");
+    }
+  }, [location.search]);
 
   const defaultPetData = {
     image: [

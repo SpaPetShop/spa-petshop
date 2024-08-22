@@ -10,7 +10,7 @@ import {
   Box,
   Container,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import FeaturedTitle from "../../../components/common/highlight/FeaturedTitle";
 import ProductAPI from "../../../utils/ProductAPI";
 import { ComboType, ComboResponse } from "../../../types/Combo/ComboType";
@@ -25,6 +25,7 @@ const SpaCompoPage: React.FC = () => {
     page: 1,
     size: 10,
   });
+  const navigate = useNavigate();
 
   const fetchAllCombos = useCallback(async () => {
     try {
@@ -42,6 +43,19 @@ const SpaCompoPage: React.FC = () => {
     fetchAllCombos();
   }, [fetchAllCombos]);
 
+  const handleBookingClick = (combo: ComboType) => {
+    // Save selected combo to localStorage or pass it via state
+    localStorage.setItem("selectedPet", JSON.stringify(combo));
+
+    // Remove booking data if it exists
+    localStorage.removeItem("bookingData");
+
+    // Navigate to the booking page
+    navigate("/booking", {
+      state: { combo }, // Optionally, you can pass the combo via state
+    });
+  };
+
   const defaultImage =
     "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
 
@@ -56,53 +70,95 @@ const SpaCompoPage: React.FC = () => {
       <Grid container spacing={4} sx={{ mb: 4 }}>
         {comboList.map((combo) => (
           <Grid item xs={12} sm={6} md={4} key={combo.id}>
-            <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-              <CardMedia
-                component="img"
-                height="200"
-                image={
-                  combo.image.length ? combo?.image[0]?.imageURL : defaultImage
-                }
-                alt={combo.name}
-                sx={{
-                  borderTopLeftRadius: 8,
-                  borderTopRightRadius: 8,
-                }}
-              />
-              <CardContent sx={{ textAlign: "center", p: 3 }}>
-                <Typography gutterBottom variant="h5" component="div">
+            <Card
+              sx={{
+                borderRadius: "20px",
+                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+                padding: "16px",
+                backgroundColor: "#fff7e6",
+              }}
+            >
+              <Box sx={{ position: "relative", textAlign: "center" }}>
+                <CardMedia
+                  component="img"
+                  image={
+                    combo.image.length ? combo.image[0]?.imageURL : defaultImage
+                  }
+                  alt={combo.name}
+                  sx={{
+                    borderRadius: "15px",
+                    maxHeight: "200px",
+                    objectFit: "cover",
+                    marginBottom: "16px",
+                  }}
+                />
+              </Box>
+              <CardContent sx={{ textAlign: "center" }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#272727",
+                    marginBottom: "8px",
+                  }}
+                >
                   {combo.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {combo.description}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ marginBottom: "16px" }}
+                >
+                  {combo.description || "Mô tả không có sẵn"}
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="primary"
-                  sx={{ mt: 2, fontWeight: "bold" }}
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#e67e22",
+                    marginBottom: "16px",
+                  }}
                 >
                   Giá: {combo.sellingPrice.toLocaleString()} VND
                 </Typography>
               </CardContent>
-              <CardActions sx={{ justifyContent: "center", pb: 2 }}>
+              <CardActions sx={{ justifyContent: "center" }}>
                 <Button
                   size="medium"
-                  variant="contained"
+                  variant="outlined"
                   color="primary"
                   component={Link}
                   to={`/spa-services/${combo.id}`}
-                  sx={{ mx: 1, fontWeight: "bold" }}
+                  sx={{
+                    color: "#e67e22",
+                    borderColor: "#e67e22",
+                    textTransform: "none",
+                    borderRadius: "50px",
+                    fontWeight: "bold",
+                    "&:hover": {
+                      backgroundColor: "#e67e22",
+                      color: "#fff",
+                    },
+                    marginRight: "8px",
+                  }}
                 >
                   Xem chi tiết
                 </Button>
                 <Button
-                  onClick={() =>
-                    toast.info("Chức năng đang trong quá trình xây dựng")
-                  }
+                  onClick={() => handleBookingClick(combo)}
                   size="medium"
-                  variant="outlined"
+                  variant="contained"
                   color="primary"
-                  sx={{ mx: 1, fontWeight: "bold" }}
+                  sx={{
+                    backgroundColor: "#e67e22",
+                    color: "#fff",
+                    textTransform: "none",
+                    borderRadius: "50px",
+                    fontWeight: "bold",
+                    "&:hover": {
+                      backgroundColor: "#cf681b",
+                    },
+                  }}
                 >
                   Đặt lịch
                 </Button>

@@ -47,7 +47,13 @@ const BookingAPI = {
   // Update order status
   updateOrderStatus: (orderId: string, payload: any) => {
     const url = `/orders/${orderId}`;
-    return axiosClient.patch(url, payload);
+    return axiosClient.put(url, payload);
+  },
+
+  // Request to change employee
+  requestChangeEmployee: (payload: any) => {
+    const url = `/request`;
+    return axiosClient.post(url, payload);
   },
 
   // Create a new booking
@@ -60,6 +66,12 @@ const BookingAPI = {
   updateOrder: (orderId: string, payload: any) => {
     const url = `/orders/${orderId}`;
     return axiosClient.put(url, payload);
+  },
+
+  // Create link vnPay with method get
+  getLinkVnPay: (params: any) => {
+    const url = "/payments/vnpay";
+    return axiosClient.get(url, { params });
   },
 };
 

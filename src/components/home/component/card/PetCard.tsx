@@ -1,12 +1,11 @@
 import React from "react";
-import styles from "./PetCard.module.css"; // Import CSS Module
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import { Grid } from "@mui/material";
+import { Box, Grid, Chip } from "@mui/material";
 import { useNavigate, Link } from "react-router-dom";
 
 interface Pet {
@@ -21,51 +20,49 @@ interface Pet {
     id: string;
     name: string;
   };
-  image: any;
+  image: string;
 }
 
 const PetCard: React.FC<{ pet: Pet }> = ({ pet }) => {
   const navigate = useNavigate();
 
   const handleBookingClick = () => {
-    // Remove any existing booking data from localStorage
     localStorage.removeItem("bookingData");
-    // Store the pet information in localStorage
     localStorage.setItem("selectedPet", JSON.stringify(pet));
     navigate("/booking");
   };
 
   return (
-    <Grid item xs={12} sm={6} md={4} lg={3} className={styles.cardContainer}>
-      <Card className={styles.card}>
-        <CardMedia
-          className={styles.cardMedia}
-          image={pet.image}
-          title={pet.name}
-        />
-        <CardActions className={styles.cardActions}>
-          <Link to={`/${pet.id}`} className={styles.detailButton}>
-            <Button className={styles.button} variant="outlined">
-              Xem chi tiết
-            </Button>
-          </Link>
-          <Button
-            className={styles.button}
-            variant="contained"
-            onClick={handleBookingClick}
-          >
-            Đặt lịch
-          </Button>
-        </CardActions>
-        <CardContent className={styles.cardContent}>
-          <Typography
-            variant="h5"
-            component="div"
+    <Grid item xs={12} sm={6} md={4} lg={3}>
+      <Card
+        sx={{
+          borderRadius: "20px",
+          boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+          padding: "16px",
+          backgroundColor: "#fff7e6",
+        }}
+      >
+        <Box sx={{ position: "relative", textAlign: "center" }}>
+          <CardMedia
+            component="img"
+            image={pet.image}
+            alt={pet.name}
             sx={{
-              fontSize: "16px",
-              fontWeight: 600,
-              marginBottom: "10px",
+              borderRadius: "15px",
+              maxHeight: "200px",
+              objectFit: "cover",
+              marginBottom: "16px",
+            }}
+          />
+        </Box>
+        <CardContent>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: "bold",
               color: "#272727",
+              marginBottom: "8px",
+              textAlign: "center",
             }}
           >
             {pet.name}
@@ -73,14 +70,62 @@ const PetCard: React.FC<{ pet: Pet }> = ({ pet }) => {
           <Typography
             variant="body2"
             sx={{
-              fontSize: "14px",
-              fontWeight: "bold",
-              color: "#e67e22",
+              color: "#888888",
+              textAlign: "center",
+              marginBottom: "8px",
             }}
+          >
+            {pet.description || "No description available"}
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{ color: "#e67e22", fontWeight: "bold", textAlign: "center" }}
           >
             {pet.sellingPrice.toLocaleString()} VNĐ
           </Typography>
         </CardContent>
+        <CardActions
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            paddingTop: "16px",
+          }}
+        >
+          <Button
+            component={Link}
+            to={`/${pet.id}`}
+            variant="outlined"
+            sx={{
+              color: "#e67e22",
+              borderColor: "#e67e22",
+              textTransform: "none",
+              borderRadius: "50px",
+              fontWeight: "bold",
+              "&:hover": {
+                backgroundColor: "#e67e22",
+                color: "#fff",
+              },
+            }}
+          >
+            Xem chi tiết
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleBookingClick}
+            sx={{
+              backgroundColor: "#e67e22",
+              color: "#fff",
+              textTransform: "none",
+              borderRadius: "50px",
+              fontWeight: "bold",
+              "&:hover": {
+                backgroundColor: "#cf681b",
+              },
+            }}
+          >
+            Đặt lịch
+          </Button>
+        </CardActions>
       </Card>
     </Grid>
   );

@@ -206,7 +206,6 @@ const Booking: React.FC = () => {
         staffId: values.staffSelection === "auto" ? null : values.staffId,
       });
 
-      toast.success("Đặt lịch thành công!");
       setIsBookingSuccess(true);
       return bookingResponse || null;
     } catch (error) {
@@ -225,41 +224,20 @@ const Booking: React.FC = () => {
           : selectedPet.sellingPrice * 0.2;
 
       // Call API to create payment
-      const paymentResponse = await BookingAPI.createPayment({
+      const paymentResponse = (await BookingAPI.createPayment({
         orderId: orderId,
         amount: amount,
         paymentType: "VNPAY",
         callbackUrl:
           process.env.REACT_APP_URL_CLIENT || "http://localhost:3000",
         accountId: userData.id,
-      });
+      })) as any;
 
       if (paymentResponse) {
-        // Update the order status to PAID
-        const updateOrderResponse = await BookingAPI.updateOrder(orderId, {
-          status: "PAID",
-          note: "Payment successful",
-        });
-
-        if (updateOrderResponse) {
-          toast.success("Thanh toán thành công!");
-          if (localStorage.getItem("bookingData") !== null) {
-            // Remove cart items from localStorage
-            localStorage.removeItem("cart");
-          }
-
-          // Clear relevant localStorage data except userData
-          localStorage.removeItem("petId");
-          localStorage.removeItem("selectedPet");
-          localStorage.removeItem("bookingData");
-          localStorage.removeItem("finalAmount");
-
-          // Redirect to profile page after successful payment and order update
-
-          navigate("/profile");
-        } else {
-          toast.error("Cập nhật đơn hàng thất bại!");
-        }
+        // Lưu orderId vào localStorage để kiểm tra trạng thái thanh toán
+        localStorage.setItem("orderId", orderId);
+        // Redirect to payment link
+        window.location.href = paymentResponse.url;
       } else {
         toast.error("Thanh toán thất bại!");
       }
@@ -286,6 +264,17 @@ const Booking: React.FC = () => {
       style: "currency",
       currency: "VND",
     });
+  };
+
+  // Create vnPay payment
+  const handleVnPayPayment = async () => {
+    try {
+      const orderId = "1234";
+      const response = await BookingAPI.getLinkVnPay({ orderId });
+      console.log("response", response);
+    } catch (error) {
+      console.error("Error creating vnPay payment:", error);
+    }
   };
 
   return (

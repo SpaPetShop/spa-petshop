@@ -5,30 +5,44 @@ import {
   Grid,
   Typography,
   Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  IconButton,
+  MenuItem,
+  FormControl,
+  Select,
+  InputLabel,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   TextField,
-  Radio,
   RadioGroup,
+  Radio,
   FormControlLabel,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
 } from "@mui/material";
+import { Error, Edit, Schedule } from "@mui/icons-material";
 import { orange, green, red, grey } from "@mui/material/colors";
-import petAPI from "../../../utils/PetAPI";
+import {
+  format,
+  differenceInMinutes,
+  parseISO,
+  isBefore,
+  addMinutes,
+  isToday,
+  isPast,
+  isSameDay,
+} from "date-fns";
 import bookingAPI from "../../../utils/BookingAPI";
+import petAPI from "../../../utils/PetAPI";
 import { toast } from "react-toastify";
-import { differenceInHours, parseISO } from "date-fns";
 
 const Profile: React.FC = () => {
   const userData = JSON.parse(localStorage.getItem("userData") || "{}");
@@ -44,9 +58,10 @@ const Profile: React.FC = () => {
   const [cancelNote, setCancelNote] = useState("");
   const [cancelDescription, setCancelDescription] = useState("");
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
   const [reload, setReload] = useState(false);
   const [changesMade, setChangesMade] = useState<Record<string, boolean>>({});
-  const [filter, setFilter] = useState<string>("All"); // Add state for filter
+  const [filter, setFilter] = useState<string>("All");
 
   useEffect(() => {
     const fetchPetList = async () => {
@@ -66,8 +81,30 @@ const Profile: React.FC = () => {
         const response: any = await bookingAPI.getBookingsByCustomerId(
           userData.id
         );
-        setBookingList(response.items);
-        setFilteredBookingList(response.items); // Initialize filtered list
+        const bookings = response.items;
+
+        // Automatically cancel orders older than 30 minutes that are not PAID and not already canceled
+        for (const booking of bookings) {
+          const createdDate = parseISO(booking.createdDate);
+          const now = new Date();
+
+          if (
+            differenceInMinutes(now, createdDate) > 30 &&
+            booking.status !== "PAID" &&
+            booking.status !== "CANCELED" // Ensure the status is not already CANCELED
+          ) {
+            // Call the API to cancel the order
+            await bookingAPI.updateOrderStatus(booking.orderId, {
+              status: "CANCELED",
+              note: "Tự động hủy do quá 30 phút không thanh toán.",
+              staffId: userData.id,
+            });
+            toast.info(`Đơn hàng ${booking.orderId} đã bị tự động hủy.`);
+          }
+        }
+
+        setBookingList(bookings);
+        setFilteredBookingList(bookings);
       } catch (error) {
         console.error("Error fetching booking list:", error);
       }
@@ -92,7 +129,7 @@ const Profile: React.FC = () => {
   }, [openStaffDialog]);
 
   useEffect(() => {
-    filterBookings(); // Apply filter whenever filter state or booking list changes
+    filterBookings();
   }, [filter, bookingList]);
 
   const filterBookings = () => {
@@ -108,6 +145,123 @@ const Profile: React.FC = () => {
   const handleDeleteClick = (orderId: string) => {
     setSelectedOrderId(orderId);
     setOpenDialog(true);
+  };
+
+  const handleUpdateOrder = (booking: any) => {
+    if (canChangeBookingDate(booking)) {
+      setSelectedOrderId(booking.orderId);
+      // Set the initial values for the current staff and time
+      setSelectedStaffId(booking.staff?.id || "");
+      setSelectedTime(format(parseISO(booking.createdDate), "HH:mm"));
+      setOpenStaffDialog(true);
+    } else {
+      toast.info(
+        "Bạn chỉ có thể đổi lịch hoặc nhân viên khi trạng thái là 'PAID'."
+      );
+    }
+  };
+
+  const canChangeBookingDate = (booking: any) => {
+    const bookingDate = parseISO(booking.createdDate);
+    return (
+      booking.status === "PAID" &&
+      !changesMade[booking.orderId] &&
+      (!isPast(bookingDate) || isSameDay(bookingDate, new Date())) // Disable if booking is fully in the past, but allow changes if it's the same day
+    );
+  };
+
+  const generateTimeSlots = () => {
+    const slots = [];
+    let start = new Date();
+    start.setHours(9, 0, 0, 0); // Start from 09:00 AM
+
+    while (start.getHours() < 21) {
+      const slotTime = format(start, "HH:mm");
+      const isDisabled =
+        isBefore(new Date(), start) ||
+        (isToday(new Date()) && isBefore(start, new Date())); // Disable past time slots on the current day
+      slots.push({
+        label: slotTime,
+        value: slotTime,
+        disabled: isDisabled,
+      });
+      start = addMinutes(start, 30); // Increment by 30 minutes
+    }
+
+    return slots;
+  };
+
+  const handleConfirmChangeStaff = async () => {
+    if (selectedOrderId && selectedTime) {
+      try {
+        await bookingAPI.requestChangeEmployee({
+          note: cancelNote,
+          exctionDate: `${new Date().toISOString()}`, // Updated field according to the new API
+          staffId: selectedStaffId || userData.id,
+          orderId: selectedOrderId,
+        });
+        toast.success("Yêu cầu thay đổi nhân viên đã được gửi!");
+        setChangesMade({ ...changesMade, [selectedOrderId]: true });
+        setReload(!reload);
+        setOpenStaffDialog(false);
+      } catch (error) {
+        console.error("Error updating order staff:", error);
+        toast.error("Yêu cầu thay đổi nhân viên thất bại.");
+      }
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedOrderId(null);
+    setCancelNote("");
+    setCancelDescription("");
+  };
+
+  const handleCloseStaffDialog = () => {
+    setOpenStaffDialog(false);
+    setSelectedStaffId("");
+    setSelectedTime("");
+  };
+
+  const getStatusChip = (status: string) => {
+    switch (status) {
+      case "UNPAID":
+        return (
+          <Chip
+            label="Chưa thanh toán"
+            sx={{ backgroundColor: orange[500], color: "white" }}
+          />
+        );
+      case "PAID":
+        return (
+          <Chip
+            label="Đã thanh toán"
+            sx={{ backgroundColor: green[500], color: "white" }}
+          />
+        );
+      case "COMPLETED":
+        return (
+          <Chip
+            label="Đã hoàn thành"
+            sx={{ backgroundColor: grey[700], color: "white" }}
+          />
+        );
+      case "CANCELED":
+        return (
+          <Chip
+            label="Đã hủy"
+            sx={{ backgroundColor: red[500], color: "white" }}
+          />
+        );
+      default:
+        return (
+          <Chip
+            label="Trạng thái không xác định"
+            sx={{ backgroundColor: grey[700], color: "white" }}
+          />
+        );
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -132,121 +286,35 @@ const Profile: React.FC = () => {
     }
   };
 
-  const canChangeBooking = (booking: any) => {
-    if (!booking.excutionDate) {
-      console.error("Execution date is undefined for booking:", booking);
-      return false;
-    }
-
-    let bookingDate;
-    try {
-      bookingDate = parseISO(booking.excutionDate);
-    } catch (error) {
-      console.error(
-        "Failed to parse execution date:",
-        booking.excutionDate,
-        error
-      );
-      return false;
-    }
-
-    const hoursUntilBooking = differenceInHours(bookingDate, new Date());
-    const hasMadeChange = changesMade[booking.orderId] || false;
-
-    return (
-      booking.status === "PAID" && hoursUntilBooking >= 24 && !hasMadeChange
-    );
-  };
-
-  const handleUpdateOrder = (booking: any) => {
-    if (canChangeBooking(booking)) {
-      setSelectedOrderId(booking.orderId);
-      setOpenStaffDialog(true);
-    } else {
-      toast.info(
-        "Bạn chỉ có thể đổi nhân viên và lịch trong vòng 24 giờ trước giờ đặt hoặc nếu đã thực hiện đổi."
-      );
-    }
-  };
-
-  const handleConfirmChangeStaff = async () => {
-    if (selectedOrderId && selectedStaffId) {
-      try {
-        await bookingAPI.updateOrderStatus(selectedOrderId, {
-          status: "PAID", // or keep the existing status if you're only updating the staff
-          note: cancelNote,
-          description: cancelDescription,
-          staffId: selectedStaffId,
-        });
-        toast.success("Nhân viên đã được đổi thành công!");
-        setChangesMade({ ...changesMade, [selectedOrderId]: true });
-        setReload(!reload);
-        setOpenStaffDialog(false);
-      } catch (error) {
-        console.error("Error updating order staff:", error);
-        toast.error("Nhân viên đã cập nhật thất bại!");
-      }
-    }
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedOrderId(null);
-    setCancelNote("");
-    setCancelDescription("");
-  };
-
-  const handleCloseStaffDialog = () => {
-    setOpenStaffDialog(false);
-    setSelectedStaffId("");
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "UNPAID":
-        return orange[500];
-      case "PAID":
-        return green[500];
-      case "COMPLETED":
-        return grey[700];
-      case "CANCELED":
-        return red[500];
-      default:
-        return grey[700];
-    }
-  };
-
-  const convertTypeToText = (type: string) => {
-    switch (type) {
-      case "UNPAID":
-        return "Chưa thanh toán";
-      case "PAID":
-        return "Đã thanh toán";
-      case "COMPLETED":
-        return "Đã hoàn thành";
-      case "CANCELED":
-        return "Đã hủy";
-      default:
-        return type;
-    }
-  };
-
   return (
     <Container maxWidth="lg" sx={{ marginY: 4 }}>
       <Grid container spacing={3}>
         <Grid item xs={12} md={3}>
-          <Box sx={{ backgroundColor: "#e89305", p: 2, borderRadius: 1 }}>
-            <Typography variant="h6" color="white">
-              Danh mục
+          <Box
+            sx={{
+              backgroundColor: "#f7f7f7",
+              p: 2,
+              borderRadius: 1,
+              boxShadow: 1,
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+              Lọc Đơn Hàng
             </Typography>
-            <List component="nav">
-              <ListItem button onClick={() => setView("bookings")}>
-                <ListItemText
-                  sx={{ color: "white" }}
-                  primary="Đơn hàng của tôi"
-                />
-              </ListItem>
-            </List>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Lọc theo trạng thái</InputLabel>
+              <Select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                label="Lọc theo trạng thái"
+              >
+                <MenuItem value="All">Tất cả</MenuItem>
+                <MenuItem value="UNPAID">Chưa thanh toán</MenuItem>
+                <MenuItem value="PAID">Đã thanh toán</MenuItem>
+                <MenuItem value="COMPLETED">Đã hoàn thành</MenuItem>
+                <MenuItem value="CANCELED">Đã hủy</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </Grid>
         <Grid item xs={12} md={9}>
@@ -255,86 +323,76 @@ const Profile: React.FC = () => {
               <Typography variant="h4" gutterBottom>
                 Đơn hàng của tôi
               </Typography>
-              {/* Filter Dropdown */}
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Lọc theo trạng thái</InputLabel>
-                <Select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  label="Lọc theo trạng thái"
-                >
-                  <MenuItem value="All">Tất cả</MenuItem>
-                  <MenuItem value="UNPAID">Chưa thanh toán</MenuItem>
-                  <MenuItem value="PAID">Đã thanh toán</MenuItem>
-                  <MenuItem value="COMPLETED">Đã hoàn thành</MenuItem>
-                  <MenuItem value="CANCELED">Đã hủy</MenuItem>
-                </Select>
-              </FormControl>
-
-              <List>
-                {filteredBookingList.map((booking) => (
-                  <React.Fragment key={booking.orderId}>
-                    <ListItem alignItems="flex-start">
-                      <Avatar
-                        alt={booking.petInfor.name}
-                        src={booking.petInfor.image}
-                        sx={{ mr: 2 }}
-                      />
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6">
-                          {booking.petInfor.name} - {booking.invoiceCode}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          Ghi chú: {booking.description}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: getStatusColor(booking.status) }}
-                        >
-                          Trạng thái: {convertTypeToText(booking.status)}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          Nhân viên chăm sóc: {booking?.staff?.fullName}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          Tổng tiền: {booking.finalAmount.toLocaleString()} VND
-                        </Typography>
-                      </Box>
-                      {/* Render buttons only if the status is not "CANCELED" */}
-                      {booking.status !== "CANCELED" && (
-                        <Box>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            sx={{ mr: 1 }}
-                            onClick={() => handleDeleteClick(booking.orderId)}
-                          >
-                            Hủy
-                          </Button>
-                          <Button
-                            variant="outlined"
+              <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Ngày tạo</TableCell>
+                      <TableCell>Tên Thú Cưng</TableCell>
+                      <TableCell>Trạng thái thanh toán</TableCell>
+                      <TableCell>Tổng tiền</TableCell>
+                      <TableCell>Nhân viên thực hiện</TableCell>
+                      <TableCell>Hành động</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredBookingList.map((booking) => (
+                      <TableRow key={booking.orderId}>
+                        <TableCell>
+                          {format(parseISO(booking.createdDate), "dd-MM-yyyy")}
+                        </TableCell>
+                        <TableCell>{booking.petInfor.name}</TableCell>
+                        <TableCell>{getStatusChip(booking.status)}</TableCell>
+                        <TableCell>
+                          {booking.finalAmount.toLocaleString()} VND
+                        </TableCell>
+                        <TableCell>
+                          {booking?.staff?.fullName || "Mặc định"}
+                        </TableCell>
+                        <TableCell>
+                          <IconButton
                             color="primary"
                             onClick={() => handleUpdateOrder(booking)}
                             disabled={
                               booking.status !== "PAID" ||
-                              !canChangeBooking(booking)
+                              (isPast(parseISO(booking.createdDate)) &&
+                                !isSameDay(
+                                  parseISO(booking.createdDate),
+                                  new Date()
+                                ))
                             }
                           >
-                            Đổi nhân viên
-                          </Button>
-                        </Box>
-                      )}
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
+                            {booking.type === "MANAGERREQUEST" ? (
+                              <Schedule />
+                            ) : (
+                              <Edit />
+                            )}
+                          </IconButton>
+                          <IconButton
+                            color="error"
+                            onClick={() => handleDeleteClick(booking.orderId)}
+                            disabled={
+                              booking.status === "CANCELED" ||
+                              (isPast(parseISO(booking.createdDate)) &&
+                                !isSameDay(
+                                  parseISO(booking.createdDate),
+                                  new Date()
+                                ))
+                            }
+                          >
+                            <Error />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
           )}
         </Grid>
       </Grid>
 
-      {/* Dialog for Canceling Order */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Hủy Đơn Hàng</DialogTitle>
         <DialogContent>
@@ -364,38 +422,74 @@ const Profile: React.FC = () => {
           <Button onClick={handleCloseDialog} color="primary">
             Hủy bỏ
           </Button>
-          <Button onClick={handleConfirmDelete} color="error">
+          <Button color="error" onClick={handleConfirmDelete}>
             Xác nhận
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Dialog for Changing Staff */}
       <Dialog open={openStaffDialog} onClose={handleCloseStaffDialog}>
-        <DialogTitle>Đổi Nhân Viên</DialogTitle>
+        <DialogTitle>
+          {selectedOrderId &&
+          bookingList.find((order) => order.orderId === selectedOrderId)
+            ?.type === "MANAGERREQUEST"
+            ? "Đổi Lịch"
+            : "Đổi Nhân Viên và Lịch"}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Vui lòng chọn nhân viên mới cho đơn hàng này.
+            {selectedOrderId &&
+            bookingList.find((order) => order.orderId === selectedOrderId)
+              ?.type === "MANAGERREQUEST"
+              ? "Vui lòng chọn khung giờ mới cho đơn hàng này."
+              : "Vui lòng chọn nhân viên và khung giờ mới cho đơn hàng này."}
           </DialogContentText>
-          <RadioGroup
-            value={selectedStaffId}
-            onChange={(e) => setSelectedStaffId(e.target.value)}
-          >
-            {staffList.map((staff) => (
-              <FormControlLabel
-                key={staff.id}
-                value={staff.id}
-                control={<Radio />}
-                label={staff.fullName}
-              />
-            ))}
-          </RadioGroup>
+          {/* Display current staff and time */}
+          <Typography variant="subtitle2" color="textSecondary">
+            Lịch hiện tại: {selectedTime || "Chưa xác định"}
+          </Typography>
+          <Typography variant="subtitle2" color="textSecondary">
+            Nhân viên hiện tại:{" "}
+            {staffList.find((staff) => staff.id === selectedStaffId)
+              ?.fullName || "Mặc định"}
+          </Typography>
+          {selectedOrderId &&
+            bookingList.find((order) => order.orderId === selectedOrderId)
+              ?.type !== "MANAGERREQUEST" && (
+              <RadioGroup
+                value={selectedStaffId}
+                onChange={(e) => setSelectedStaffId(e.target.value)}
+              >
+                {staffList.map((staff) => (
+                  <FormControlLabel
+                    key={staff.id}
+                    value={staff.id}
+                    control={<Radio />}
+                    label={staff.fullName}
+                  />
+                ))}
+              </RadioGroup>
+            )}
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Chọn khung giờ</InputLabel>
+            <Select
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+              label="Chọn khung giờ"
+            >
+              {generateTimeSlots().map((slot) => (
+                <MenuItem key={slot.value} value={slot.value}>
+                  {slot.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseStaffDialog} color="primary">
             Hủy bỏ
           </Button>
-          <Button onClick={handleConfirmChangeStaff} color="primary">
+          <Button color="primary" onClick={handleConfirmChangeStaff}>
             Xác nhận
           </Button>
         </DialogActions>

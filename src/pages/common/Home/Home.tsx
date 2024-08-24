@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Grid } from "@mui/material";
 import { toast } from "react-toastify";
 import PetCard from "../../../components/home/component/card/PetCard";
@@ -30,6 +30,7 @@ const Home: React.FC = () => {
     total: 0,
     totalPages: 1,
   });
+  const navigate = useNavigate();
 
   const location = useLocation();
 
@@ -59,9 +60,10 @@ const Home: React.FC = () => {
     // Parse URL parameters to get the response code
     const params = new URLSearchParams(location.search);
     const responseCode = params.get("vnp_ResponseCode");
+    console.log(responseCode)
 
     if (responseCode) {
-      if (responseCode === "00") {
+      if (responseCode == "00") {
         // Payment succeeded
         toast.success("Thanh toán thành công!");
 
@@ -70,25 +72,23 @@ const Home: React.FC = () => {
           // Optionally, update order status to PAID
           BookingAPI.updateOrderStatus(orderId, {
             status: "PAID",
-          }).catch((error) => {
+          })
+          .then(() => {
+            navigate("/profile")
+          })
+          .catch((error) => {
             console.error("Failed to update order status:", error);
           });
 
-          localStorage.removeItem("orderId");
-          // remove cart
           localStorage.removeItem("cart");
-          // reload page to update order status
-          window.location.reload();
+
         }
-      } else {
+      } else if(responseCode != "00"){
         // Payment failed
         toast.error("Thanh toán thất bại. Vui lòng thử lại.");
       }
-    } else {
-      //  Payment failed
-      toast.error("Thanh toán thất bại. Vui lòng thử lại.");
-    }
-  }, [location.search]);
+    } 
+  }, [location]);
 
   const defaultPetData = {
     image: [
@@ -98,6 +98,8 @@ const Home: React.FC = () => {
       },
     ],
   };
+
+  console.log(listProduct)
 
   const renderProductGrid = (title: string, category: string) => (
     <section className={styles.section}>
@@ -113,6 +115,7 @@ const Home: React.FC = () => {
                 name: product.name,
                 stockPrice: product.stockPrice,
                 sellingPrice: product.sellingPrice,
+                timeWork: product.timeWork,
                 status: product.status,
                 category: product.category,
                 image: product?.image?.[0]?.imageURL

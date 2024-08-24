@@ -21,6 +21,7 @@ interface Pet {
     name: string;
   };
   image: string;
+  timeWork: number;
 }
 
 const PetCard: React.FC<{ pet: Pet }> = ({ pet }) => {

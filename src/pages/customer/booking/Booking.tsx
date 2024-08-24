@@ -75,6 +75,8 @@ const Booking: React.FC = () => {
   const [petList, setPetList] = useState<Pet[]>([]);
   const [petTypes, setPetTypes] = useState<PetType[]>([]);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [staffTasks, setStaffTasks] = useState<any[]>([]);
+  const [selectedStaffTasks, setSelectedStaffTasks] = useState<any[]>([]);
 
   const formik = useFormik({
     initialValues: {
@@ -135,8 +137,18 @@ const Booking: React.FC = () => {
       }
     };
 
+    const fetchStaffTasks = async () => {
+      try {
+        const response = await BookingAPI.getStaffTasks();
+        setStaffTasks(response);
+      } catch (error) {
+        console.error("Error fetching staff list:", error);
+      }
+    };
+
     fetchStaffList();
     fetchPetTypes();
+    fetchStaffTasks();
   }, []);
 
   useEffect(() => {
@@ -150,6 +162,42 @@ const Booking: React.FC = () => {
     };
     fetchPetList();
   }, [userData.id]);
+
+  useEffect(() => {
+    if (formik.values.staffId) {
+      const tasks = staffTasks.filter(
+        (task) => task.staff.id === formik.values.staffId
+      );
+      setSelectedStaffTasks(tasks);
+    }
+  }, [formik.values.staffId, staffTasks]);
+
+  const checkTimeSlotAvailability = (slot: Date) => {
+    const slotTime = format(slot, "yyyy-MM-dd'T'HH:mm:ss");
+
+    if (formik.values.staffSelection === "manual" && formik.values.staffId) {
+      return !selectedStaffTasks.some(
+        (task) => task.excutionDate === slotTime
+      );
+    } else if (formik.values.staffSelection === "auto") {
+      // Check availability for all staff members
+      return staffList.some((staff) => {
+        const staffTasksForSlot = staffTasks.filter(
+          (task) => task.staff.id === staff.id
+        );
+        return !staffTasksForSlot.some(
+          (task) => task.excutionDate === slotTime
+        );
+      });
+    }
+
+    return true;
+  };
+
+  const generateFilteredTimeSlots = () => {
+    const slots = generateTimeSlots();
+    return slots;
+  };
 
   const handlePetSubmit = async (values: any) => {
     try {
@@ -174,39 +222,45 @@ const Booking: React.FC = () => {
       toast.error("Tên boss đã tồn tại, vui lòng chọn tên khác!");
     }
   };
+  console.log(cartItems, localStorage.getItem("bookingData"))
+      console.log(selectedPet, localStorage.getItem("selectedPet"))
 
   const handleBookingSubmit = async (values: any) => {
     try {
       const petId = localStorage.getItem("petId");
+      
+
       const productList =
         cartItems.length > 0
           ? cartItems.map((item: any) => ({
               productId: item.id,
               quantity: 1,
               sellingPrice: item.sellingPrice,
+              timeWork: item?.timeWork || 0,
             }))
           : [
               {
                 productId: selectedPet.id,
                 quantity: values.quantity,
                 sellingPrice: selectedPet.sellingPrice,
+                timeWork: selectedPet?.timeWork || 0,
               },
             ];
-
-      const bookingResponse = await BookingAPI.createBooking({
-        productList,
-        excutionDate: `${values.date}T${values.time}`,
-        note: values.note,
-        description: values.description,
-        type:
-          values.staffSelection === "auto"
-            ? "MANAGERREQUEST"
-            : "CUSTOMERREQUEST",
-        petId: petId,
-        staffId: values.staffSelection === "auto" ? null : values.staffId,
-      });
-
-      setIsBookingSuccess(true);
+            const bookingResponse = await BookingAPI.createBooking({
+              productList,
+              excutionDate: `${values.date}T${values.time}`,
+              note: values.note,
+              description: values.description,
+              type:
+                values.staffSelection == "auto"
+                  ? "MANAGERREQUEST"
+                  : "CUSTOMERREQUEST",
+              petId: petId,
+              staffId: values.staffSelection === "auto" ? null : values.staffId,
+            });
+      
+            setIsBookingSuccess(true);
+      
       return bookingResponse || null;
     } catch (error) {
       console.error("Error creating booking:", error);
@@ -217,13 +271,11 @@ const Booking: React.FC = () => {
 
   const handlePayment = async (orderId: string) => {
     try {
-      // Determine the payment amount based on whether bookingData or selectedPet is being used
       const amount =
         cartItems.length > 0
           ? finalAmount * 0.2
           : selectedPet.sellingPrice * 0.2;
 
-      // Call API to create payment
       const paymentResponse = (await BookingAPI.createPayment({
         orderId: orderId,
         amount: amount,
@@ -234,9 +286,7 @@ const Booking: React.FC = () => {
       })) as any;
 
       if (paymentResponse) {
-        // Lưu orderId vào localStorage để kiểm tra trạng thái thanh toán
         localStorage.setItem("orderId", orderId);
-        // Redirect to payment link
         window.location.href = paymentResponse.url;
       } else {
         toast.error("Thanh toán thất bại!");
@@ -255,7 +305,7 @@ const Booking: React.FC = () => {
     navigate("/profile");
   };
 
-  const timeSlots = generateTimeSlots();
+  const timeSlots = generateFilteredTimeSlots();
   const isToday = formik.values.date === format(new Date(), "yyyy-MM-dd");
   const currentTime = new Date();
 
@@ -264,17 +314,6 @@ const Booking: React.FC = () => {
       style: "currency",
       currency: "VND",
     });
-  };
-
-  // Create vnPay payment
-  const handleVnPayPayment = async () => {
-    try {
-      const orderId = "1234";
-      const response = await BookingAPI.getLinkVnPay({ orderId });
-      console.log("response", response);
-    } catch (error) {
-      console.error("Error creating vnPay payment:", error);
-    }
   };
 
   return (
@@ -392,33 +431,7 @@ const Booking: React.FC = () => {
             InputLabelProps={{ shrink: true }}
           />
 
-          <div className={styles.timeSlotContainer}>
-            <label>Chọn khung giờ dịch vụ</label>
-            <div className={styles.timeSlots}>
-              {timeSlots.map((slot) => {
-                const slotTime = format(slot, "HH:mm");
-                const isDisabled =
-                  isToday && slot.getTime() < currentTime.getTime();
-                return (
-                  <Button
-                    key={slotTime}
-                    variant={
-                      formik.values.time === slotTime ? "contained" : "outlined"
-                    }
-                    color="primary"
-                    onClick={() => formik.setFieldValue("time", slotTime)}
-                    disabled={isDisabled}
-                    style={{ margin: "5px" }}
-                  >
-                    {slotTime}
-                  </Button>
-                );
-              })}
-            </div>
-            {formik.touched.time && formik.errors.time && (
-              <div className={styles.error}>{formik.errors.time}</div>
-            )}
-          </div>
+         
 
           <FormControl fullWidth margin="normal" variant="outlined">
             <InputLabel shrink>Hình thức chọn nhân viên</InputLabel>
@@ -465,6 +478,35 @@ const Booking: React.FC = () => {
               )}
             </FormControl>
           )}
+
+          <div className={styles.timeSlotContainer}>
+            <label>Chọn khung giờ dịch vụ</label>
+            <div className={styles.timeSlots}>
+              {timeSlots.map((slot) => {
+                const slotTime = format(slot, "HH:mm");
+                const isDisabled =
+                  isToday && slot.getTime() < currentTime.getTime();
+
+                const isAvailable = checkTimeSlotAvailability(slot);
+
+                return (
+                  <Button
+                    key={slotTime}
+                    variant={formik.values.time === slotTime ? "contained" : "outlined"}
+                    color="primary"
+                    onClick={() => formik.setFieldValue("time", slotTime)}
+                    disabled={isDisabled || !isAvailable} // Disable button if time slot is not available
+                    style={{ margin: "5px" }}
+                  >
+                    {slotTime}
+                  </Button>
+                );
+              })}
+            </div>
+            {formik.touched.time && formik.errors.time && (
+              <div className={styles.error}>{formik.errors.time}</div>
+            )}
+          </div>  
 
           <TextField
             fullWidth

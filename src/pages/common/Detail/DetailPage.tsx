@@ -23,6 +23,7 @@ const DetailPage: React.FC = () => {
     description: "Mô tả sản phẩm không có sẵn.",
     status: "Unavailable",
     priority: null,
+    timeWork: 0,
     category: {
       id: "N/A",
       name: "Chưa xác định",

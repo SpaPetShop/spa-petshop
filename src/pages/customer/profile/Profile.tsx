@@ -24,22 +24,10 @@ import {
   DialogContentText,
   DialogTitle,
   TextField,
-  RadioGroup,
-  Radio,
-  FormControlLabel,
 } from "@mui/material";
-import { Error, Edit, Schedule } from "@mui/icons-material";
-import { orange, green, red, grey } from "@mui/material/colors";
-import {
-  format,
-  differenceInMinutes,
-  parseISO,
-  isBefore,
-  addMinutes,
-  isToday,
-  isPast,
-  isSameDay,
-} from "date-fns";
+import { Error, Edit, Visibility } from "@mui/icons-material";
+import { orange, green, red, grey, blue } from "@mui/material/colors";
+import { format, parseISO, isPast, addHours, addMinutes, isSameDay } from "date-fns";
 import bookingAPI from "../../../utils/BookingAPI";
 import petAPI from "../../../utils/PetAPI";
 import { toast } from "react-toastify";
@@ -54,13 +42,14 @@ const Profile: React.FC = () => {
   const [staffList, setStaffList] = useState<any[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [openStaffDialog, setOpenStaffDialog] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [cancelNote, setCancelNote] = useState("");
   const [cancelDescription, setCancelDescription] = useState("");
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [reload, setReload] = useState(false);
-  const [changesMade, setChangesMade] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState<string>("All");
 
   useEffect(() => {
@@ -75,6 +64,26 @@ const Profile: React.FC = () => {
     fetchPetList();
   }, [userData.id]);
 
+  const generateTimeSlots = () => {
+    const slots = [];
+    let start = new Date();
+    start.setHours(9, 0, 0, 0);
+
+    while (start.getHours() < 21) {
+      const slotTime = format(start, "HH:mm");
+      const isDisabled = start < new Date();
+
+      slots.push({
+        label: slotTime,
+        value: slotTime,
+        disabled: isDisabled,
+      });
+      start = addMinutes(start, 30);
+    }
+
+    return slots;
+  };
+
   useEffect(() => {
     const fetchBookingList = async () => {
       try {
@@ -82,27 +91,6 @@ const Profile: React.FC = () => {
           userData.id
         );
         const bookings = response.items;
-
-        // Automatically cancel orders older than 30 minutes that are not PAID and not already canceled
-        for (const booking of bookings) {
-          const createdDate = parseISO(booking.createdDate);
-          const now = new Date();
-
-          if (
-            differenceInMinutes(now, createdDate) > 30 &&
-            booking.status !== "PAID" &&
-            booking.status !== "CANCELED" // Ensure the status is not already CANCELED
-          ) {
-            // Call the API to cancel the order
-            await bookingAPI.updateOrderStatus(booking.orderId, {
-              status: "CANCELED",
-              note: "Tự động hủy do quá 30 phút không thanh toán.",
-              staffId: userData.id,
-            });
-            toast.info(`Đơn hàng ${booking.orderId} đã bị tự động hủy.`);
-          }
-        }
-
         setBookingList(bookings);
         setFilteredBookingList(bookings);
       } catch (error) {
@@ -142,66 +130,46 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = (orderId: string) => {
-    setSelectedOrderId(orderId);
+  const handleDeleteClick = (order: any) => {
+    setSelectedOrder(order);
     setOpenDialog(true);
   };
 
   const handleUpdateOrder = (booking: any) => {
     if (canChangeBookingDate(booking)) {
-      setSelectedOrderId(booking.orderId);
-      // Set the initial values for the current staff and time
+      setSelectedOrder(booking);
       setSelectedStaffId(booking.staff?.id || "");
-      setSelectedTime(format(parseISO(booking.createdDate), "HH:mm"));
+      setSelectedDate(format(parseISO(booking.excutionDate), "yyyy-MM-dd"));
+      setSelectedTime(format(parseISO(booking.excutionDate), "HH:mm"));
       setOpenStaffDialog(true);
     } else {
       toast.info(
-        "Bạn chỉ có thể đổi lịch hoặc nhân viên khi trạng thái là 'PAID'."
+        "Bạn chỉ có thể đổi lịch hoặc nhân viên khi trạng thái là 'PAID' và trong vòng 24 giờ trước lịch hẹn."
       );
     }
   };
 
-  const canChangeBookingDate = (booking: any) => {
-    const bookingDate = parseISO(booking.createdDate);
-    return (
-      booking.status === "PAID" &&
-      !changesMade[booking.orderId] &&
-      (!isPast(bookingDate) || isSameDay(bookingDate, new Date())) // Disable if booking is fully in the past, but allow changes if it's the same day
-    );
+  const handleViewDetails = (order: any) => {
+    setSelectedOrder(order);
+    setOpenDetailsDialog(true);
   };
 
-  const generateTimeSlots = () => {
-    const slots = [];
-    let start = new Date();
-    start.setHours(9, 0, 0, 0); // Start from 09:00 AM
-
-    while (start.getHours() < 21) {
-      const slotTime = format(start, "HH:mm");
-      const isDisabled =
-        isBefore(new Date(), start) ||
-        (isToday(new Date()) && isBefore(start, new Date())); // Disable past time slots on the current day
-      slots.push({
-        label: slotTime,
-        value: slotTime,
-        disabled: isDisabled,
-      });
-      start = addMinutes(start, 30); // Increment by 30 minutes
-    }
-
-    return slots;
+  const canChangeBookingDate = (booking: any) => {
+    const executionDate = parseISO(booking.excutionDate);
+    return booking.status === "PAID" && !isPast(addHours(executionDate, -24));
   };
 
   const handleConfirmChangeStaff = async () => {
-    if (selectedOrderId && selectedTime) {
+    if (selectedOrder?.orderId && selectedDate && selectedTime) {
+      const updatedExecutionDate = `${selectedDate}T${selectedTime}:00`;
       try {
         await bookingAPI.requestChangeEmployee({
           note: cancelNote,
-          exctionDate: `${new Date().toISOString()}`, // Updated field according to the new API
+          exctionDate: updatedExecutionDate,
           staffId: selectedStaffId || userData.id,
-          orderId: selectedOrderId,
+          orderId: selectedOrder.orderId,
         });
         toast.success("Yêu cầu thay đổi nhân viên đã được gửi!");
-        setChangesMade({ ...changesMade, [selectedOrderId]: true });
         setReload(!reload);
         setOpenStaffDialog(false);
       } catch (error) {
@@ -213,7 +181,7 @@ const Profile: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedOrderId(null);
+    setSelectedOrder(null);
     setCancelNote("");
     setCancelDescription("");
   };
@@ -221,7 +189,35 @@ const Profile: React.FC = () => {
   const handleCloseStaffDialog = () => {
     setOpenStaffDialog(false);
     setSelectedStaffId("");
+    setSelectedDate("");
     setSelectedTime("");
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setOpenDetailsDialog(false);
+    setSelectedOrder(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedOrder?.orderId) {
+      try {
+        await bookingAPI.updateOrderStatus(selectedOrder.orderId, {
+          status: "CANCELED",
+          note: cancelNote,
+          description: cancelDescription,
+          staffId: userData.id,
+        });
+        toast.success("Order canceled successfully!");
+        setReload(!reload);
+        setBookingList((prev) =>
+          prev.filter((booking) => booking.orderId !== selectedOrder.orderId)
+        );
+        setOpenDialog(false);
+      } catch (error) {
+        console.error("Error canceling order:", error);
+        toast.error("Failed to cancel order.");
+      }
+    }
   };
 
   const getStatusChip = (status: string) => {
@@ -264,28 +260,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (selectedOrderId) {
-      try {
-        await bookingAPI.updateOrderStatus(selectedOrderId, {
-          status: "CANCELED",
-          note: cancelNote,
-          description: cancelDescription,
-          staffId: userData.id,
-        });
-        toast.success("Order canceled successfully!");
-        setReload(!reload);
-        setBookingList((prev) =>
-          prev.filter((booking) => booking.orderId !== selectedOrderId)
-        );
-        setOpenDialog(false);
-      } catch (error) {
-        console.error("Error canceling order:", error);
-        toast.error("Failed to cancel order.");
-      }
-    }
-  };
-
   return (
     <Container maxWidth="lg" sx={{ marginY: 4 }}>
       <Grid container spacing={3}>
@@ -323,14 +297,16 @@ const Profile: React.FC = () => {
               <Typography variant="h4" gutterBottom>
                 Đơn hàng của tôi
               </Typography>
-              <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
+              <TableContainer component={Paper} sx={{ boxShadow: 4, borderRadius: 2 }}>
                 <Table>
-                  <TableHead>
+                  <TableHead sx={{ backgroundColor: blue[50] }}>
                     <TableRow>
                       <TableCell>Ngày tạo</TableCell>
                       <TableCell>Tên Thú Cưng</TableCell>
                       <TableCell>Trạng thái thanh toán</TableCell>
                       <TableCell>Tổng tiền</TableCell>
+                      <TableCell>Ngày làm</TableCell>
+                      <TableCell>Giờ làm</TableCell>
                       <TableCell>Nhân viên thực hiện</TableCell>
                       <TableCell>Hành động</TableCell>
                     </TableRow>
@@ -341,36 +317,38 @@ const Profile: React.FC = () => {
                         <TableCell>
                           {format(parseISO(booking.createdDate), "dd-MM-yyyy")}
                         </TableCell>
-                        <TableCell>{booking.petInfor.name}</TableCell>
+                        <TableCell>{booking.petInfor?.name || "N/A"}</TableCell>
                         <TableCell>{getStatusChip(booking.status)}</TableCell>
                         <TableCell>
-                          {booking.finalAmount.toLocaleString()} VND
+                          {booking.finalAmount?.toLocaleString() || 0} VND
                         </TableCell>
                         <TableCell>
-                          {booking?.staff?.fullName || "Mặc định"}
+                          {format(parseISO(booking.excutionDate), "dd-MM-yyyy HH:mm")}
+                        </TableCell>
+                        <TableCell>{booking.timeWork} giờ</TableCell>
+                        <TableCell>
+                          {booking.staff?.fullName || ""}
                         </TableCell>
                         <TableCell>
+                          <IconButton
+                            color="primary"
+                            onClick={() => handleViewDetails(booking)}
+                          >
+                            <Visibility />
+                          </IconButton>
                           <IconButton
                             color="primary"
                             onClick={() => handleUpdateOrder(booking)}
                             disabled={
                               booking.status !== "PAID" ||
-                              (isPast(parseISO(booking.createdDate)) &&
-                                !isSameDay(
-                                  parseISO(booking.createdDate),
-                                  new Date()
-                                ))
+                              isPast(addHours(parseISO(booking.excutionDate), -24))
                             }
                           >
-                            {booking.type === "MANAGERREQUEST" ? (
-                              <Schedule />
-                            ) : (
-                              <Edit />
-                            )}
+                            <Edit />
                           </IconButton>
                           <IconButton
                             color="error"
-                            onClick={() => handleDeleteClick(booking.orderId)}
+                            onClick={() => handleDeleteClick(booking)}
                             disabled={
                               booking.status === "CANCELED" ||
                               (isPast(parseISO(booking.createdDate)) &&
@@ -393,19 +371,18 @@ const Profile: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Hủy Đơn Hàng</DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ backgroundColor: red[100], fontWeight: "bold" }}>Hủy Đơn Hàng</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Bạn có chắc chắn muốn hủy đơn hàng này? Vui lòng nhập ghi chú và mô
-            tả lý do hủy.
+          <DialogContentText sx={{ mb: 2 }}>
+            Bạn có chắc chắn muốn hủy đơn hàng này? Vui lòng nhập ghi chú và mô tả lý do hủy.
           </DialogContentText>
           <TextField
             autoFocus
             margin="dense"
             label="Ghi chú"
             fullWidth
-            variant="standard"
+            variant="outlined"
             value={cancelNote}
             onChange={(e) => setCancelNote(e.target.value)}
           />
@@ -413,7 +390,7 @@ const Profile: React.FC = () => {
             margin="dense"
             label="Mô tả"
             fullWidth
-            variant="standard"
+            variant="outlined"
             value={cancelDescription}
             onChange={(e) => setCancelDescription(e.target.value)}
           />
@@ -428,62 +405,64 @@ const Profile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openStaffDialog} onClose={handleCloseStaffDialog}>
-        <DialogTitle>
-          {selectedOrderId &&
-          bookingList.find((order) => order.orderId === selectedOrderId)
-            ?.type === "MANAGERREQUEST"
+      <Dialog open={openStaffDialog} onClose={handleCloseStaffDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ backgroundColor: blue[100], fontWeight: "bold" }}>
+          {selectedOrder?.type === "MANAGERREQUEST"
             ? "Đổi Lịch"
             : "Đổi Nhân Viên và Lịch"}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            {selectedOrderId &&
-            bookingList.find((order) => order.orderId === selectedOrderId)
-              ?.type === "MANAGERREQUEST"
-              ? "Vui lòng chọn khung giờ mới cho đơn hàng này."
-              : "Vui lòng chọn nhân viên và khung giờ mới cho đơn hàng này."}
-          </DialogContentText>
-          {/* Display current staff and time */}
-          <Typography variant="subtitle2" color="textSecondary">
-            Lịch hiện tại: {selectedTime || "Chưa xác định"}
-          </Typography>
-          <Typography variant="subtitle2" color="textSecondary">
-            Nhân viên hiện tại:{" "}
-            {staffList.find((staff) => staff.id === selectedStaffId)
-              ?.fullName || "Mặc định"}
-          </Typography>
-          {selectedOrderId &&
-            bookingList.find((order) => order.orderId === selectedOrderId)
-              ?.type !== "MANAGERREQUEST" && (
-              <RadioGroup
-                value={selectedStaffId}
-                onChange={(e) => setSelectedStaffId(e.target.value)}
-              >
-                {staffList.map((staff) => (
-                  <FormControlLabel
-                    key={staff.id}
-                    value={staff.id}
-                    control={<Radio />}
-                    label={staff.fullName}
-                  />
-                ))}
-              </RadioGroup>
-            )}
           <FormControl fullWidth margin="normal">
-            <InputLabel>Chọn khung giờ</InputLabel>
+            <InputLabel>Đổi nhân viên</InputLabel>
             <Select
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-              label="Chọn khung giờ"
+              value={selectedStaffId}
+              onChange={(e) => setSelectedStaffId(e.target.value)}
+              label="Đổi nhân viên"
+              disabled={selectedOrder?.type === "MANAGERREQUEST"}
             >
-              {generateTimeSlots().map((slot) => (
-                <MenuItem key={slot.value} value={slot.value}>
-                  {slot.label}
+              {staffList.map((staff) => (
+                <MenuItem key={staff.id} value={staff.id}>
+                  {staff.fullName}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+          
+          <TextField
+            fullWidth
+            label="Chọn ngày"
+            name="date"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            margin="normal"
+            InputLabelProps={{ shrink: true }}
+          />
+          
+          <div>
+            <label>Chọn khung giờ dịch vụ</label>
+            <div>
+            {generateTimeSlots().map((slot) => {
+              const slotTime = slot.value;
+              const selectedDateTime = new Date(`${selectedDate}T${slotTime}`);
+              
+              const isDisabled = selectedDateTime < new Date();
+
+              return (
+                <Button
+                  key={slotTime}
+                  variant={selectedTime === slotTime ? "contained" : "outlined"}
+                  color="primary"
+                  onClick={() => setSelectedTime(slotTime)}
+                  disabled={isDisabled}
+                  style={{ margin: "5px" }}
+                >
+                  {slot.label}
+                </Button>
+              );
+            })}
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseStaffDialog} color="primary">
@@ -491,6 +470,70 @@ const Profile: React.FC = () => {
           </Button>
           <Button color="primary" onClick={handleConfirmChangeStaff}>
             Xác nhận
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openDetailsDialog} onClose={handleCloseDetailsDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ backgroundColor: grey[200], fontWeight: "bold" }}>Chi Tiết Đơn Hàng</DialogTitle>
+        <DialogContent>
+          {selectedOrder ? (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Mã Đơn Hàng: {selectedOrder.orderId}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Mã Hóa Đơn: {selectedOrder.invoiceCode}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Ngày Tạo: {format(parseISO(selectedOrder.createdDate), "dd-MM-yyyy HH:mm:ss")}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Trạng Thái: {selectedOrder.status}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Tổng Tiền: {selectedOrder.finalAmount?.toLocaleString()} VND
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Ngày Làm: {format(parseISO(selectedOrder.excutionDate), "dd-MM-yyyy HH:mm")}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Giờ Làm: {selectedOrder.timeWork} giờ
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Nhân Viên: {selectedOrder.staff?.fullName || ""}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Khách Hàng: {selectedOrder.userInfo?.fullName || "N/A"}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Số Điện Thoại: {selectedOrder.userInfo?.phoneNumber || "N/A"}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Tên Thú Cưng: {selectedOrder.petInfor?.name || "N/A"}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Loại Thú Cưng: {selectedOrder.petInfor?.typePet?.name || "N/A"}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Ghi Chú: {selectedOrder.note?.map((note: any) => note.description).join(', ') || "N/A"}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Danh Sách Dịch Vụ:
+                {selectedOrder.productList?.map((product: any) => (
+                  <Box key={product.orderDetailId} sx={{ ml: 2 }}>
+                    Dịch vụ: {product.supProductName} - {product.quantity} x {product.sellingPrice?.toLocaleString()} VND
+                  </Box>
+                )) || "N/A"}
+              </Typography>
+            </Box>
+          ) : (
+            <DialogContentText>Không tìm thấy thông tin đơn hàng.</DialogContentText>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetailsDialog} color="primary">
+            Đóng
           </Button>
         </DialogActions>
       </Dialog>

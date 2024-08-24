@@ -26,6 +26,17 @@ const BookingAPI = {
     });
   },
 
+  // Fetch Task
+  getStaffTasks: (params?: any) => {
+    const url = "/task";
+    return axiosClient.get<any, any[]>(url, {
+      params,
+      paramsSerializer: {
+        indexes: null, // by default: false
+      },
+    });
+  },
+
   // Fetch bookings by customer ID
   getBookingsByCustomerId: (customerId: string) => {
     const url = `/orders?AccountId=${customerId}`;

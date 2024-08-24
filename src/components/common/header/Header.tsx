@@ -127,7 +127,7 @@ const Header: React.FC = () => {
               fontSize: "18px",
             }}
           >
-            Dịch vụ
+            Combo Spa & Grooming
           </Link>
           <Link
             to={"/contact"}

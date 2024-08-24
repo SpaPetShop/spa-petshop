@@ -19,7 +19,6 @@ import ProductAPI from "../../../utils/ProductAPI";
 import { ComboType } from "../../../types/Combo/ComboType";
 import LoadingComponentVersion2 from "../../../components/common/loading/Backdrop";
 import SubProductAPI from "../../../utils/SubProductAPI";
-import styles from './OrderDetailsDialog.module.css';
 
 const DEFAULT_IMAGE_URL =
   "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";

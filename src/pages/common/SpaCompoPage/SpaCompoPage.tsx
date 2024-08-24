@@ -44,15 +44,10 @@ const SpaCompoPage: React.FC = () => {
   }, [fetchAllCombos]);
 
   const handleBookingClick = (combo: ComboType) => {
-    // Save selected combo to localStorage or pass it via state
     localStorage.setItem("selectedPet", JSON.stringify(combo));
-
-    // Remove booking data if it exists
     localStorage.removeItem("bookingData");
-
-    // Navigate to the booking page
     navigate("/booking", {
-      state: { combo }, // Optionally, you can pass the combo via state
+      state: { combo },
     });
   };
 
@@ -67,106 +62,110 @@ const SpaCompoPage: React.FC = () => {
         subtitle="Các gói combo spa cho thú cưng"
       />
 
-      <Grid container spacing={4} sx={{ mb: 4 }}>
-        {comboList.map((combo) => (
-          <Grid item xs={12} sm={6} md={4} key={combo.id}>
-            <Card
-              sx={{
-                borderRadius: "20px",
-                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-                padding: "16px",
-                backgroundColor: "#fff7e6",
-              }}
-            >
-              <Box sx={{ position: "relative", textAlign: "center" }}>
-                <CardMedia
-                  component="img"
-                  image={
-                    combo.image.length ? combo.image[0]?.imageURL : defaultImage
-                  }
-                  alt={combo.name}
-                  sx={{
-                    borderRadius: "15px",
-                    maxHeight: "200px",
-                    objectFit: "cover",
-                    marginBottom: "16px",
-                  }}
-                />
-              </Box>
-              <CardContent sx={{ textAlign: "center" }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: "bold",
-                    color: "#272727",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {combo.name}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ marginBottom: "16px" }}
-                >
-                  {combo.description || "Mô tả không có sẵn"}
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: "bold",
-                    color: "#e67e22",
-                    marginBottom: "16px",
-                  }}
-                >
-                  Giá: {combo.sellingPrice.toLocaleString()} VND
-                </Typography>
-              </CardContent>
-              <CardActions sx={{ justifyContent: "center" }}>
-                <Button
-                  size="medium"
-                  variant="outlined"
-                  color="primary"
-                  component={Link}
-                  to={`/spa-services/${combo.id}`}
-                  sx={{
-                    color: "#e67e22",
-                    borderColor: "#e67e22",
-                    textTransform: "none",
-                    borderRadius: "50px",
-                    fontWeight: "bold",
-                    "&:hover": {
+      <Box sx={{ marginBottom: 4 }}>
+        <Grid container spacing={4}>
+          {comboList.map((combo) => (
+            <Grid item xs={12} sm={6} md={4} key={combo.id}>
+              <Card
+                sx={{
+                  borderRadius: "20px",
+                  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+                  backgroundColor: "#fff7e6",
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
+              >
+                <Box sx={{ position: "relative", flexGrow: 1 }}>
+                  <CardMedia
+                    component="img"
+                    image={
+                      combo.image.length ? combo.image[0]?.imageURL : defaultImage
+                    }
+                    alt={combo.name}
+                    sx={{
+                      borderRadius: "15px",
+                      height: "200px",
+                      objectFit: "cover",
+                      marginBottom: "16px",
+                    }}
+                  />
+                </Box>
+                <CardContent sx={{ flexGrow: 1, textAlign: "center" }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#272727",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {combo.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ marginBottom: "16px" }}
+                  >
+                    {combo.description || "Mô tả không có sẵn"}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#e67e22",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    Giá: {combo.sellingPrice.toLocaleString()} VND
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ justifyContent: "center", padding: "16px" }}>
+                  <Button
+                    size="medium"
+                    variant="outlined"
+                    color="primary"
+                    component={Link}
+                    to={`/spa-services/${combo.id}`}
+                    sx={{
+                      color: "#e67e22",
+                      borderColor: "#e67e22",
+                      textTransform: "none",
+                      borderRadius: "50px",
+                      fontWeight: "bold",
+                      "&:hover": {
+                        backgroundColor: "#e67e22",
+                        color: "#fff",
+                      },
+                      marginRight: "8px",
+                    }}
+                  >
+                    Xem chi tiết
+                  </Button>
+                  <Button
+                    onClick={() => handleBookingClick(combo)}
+                    size="medium"
+                    variant="contained"
+                    color="primary"
+                    sx={{
                       backgroundColor: "#e67e22",
                       color: "#fff",
-                    },
-                    marginRight: "8px",
-                  }}
-                >
-                  Xem chi tiết
-                </Button>
-                <Button
-                  onClick={() => handleBookingClick(combo)}
-                  size="medium"
-                  variant="contained"
-                  color="primary"
-                  sx={{
-                    backgroundColor: "#e67e22",
-                    color: "#fff",
-                    textTransform: "none",
-                    borderRadius: "50px",
-                    fontWeight: "bold",
-                    "&:hover": {
-                      backgroundColor: "#cf681b",
-                    },
-                  }}
-                >
-                  Đặt lịch
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                      textTransform: "none",
+                      borderRadius: "50px",
+                      fontWeight: "bold",
+                      "&:hover": {
+                        backgroundColor: "#cf681b",
+                      },
+                    }}
+                  >
+                    Đặt lịch
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
       <Box mt={5}>
         <FeaturedTitle

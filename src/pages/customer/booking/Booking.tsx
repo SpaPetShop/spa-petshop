@@ -429,6 +429,9 @@ const Booking: React.FC = () => {
       : selectedPet.sellingPrice * 0.2
   )}
 </p>
+<p style={{ color: 'red', fontWeight: 'bold', fontStyle: 'italic' }}>
+    *Bạn sẽ không thể thay đổi lịch và nhân viên nếu khoảng cách từ thời gian thực đến thời gian đặt dịch vụ NHỎ HƠN 24 giờ
+  </p>
 
 
           <TextField

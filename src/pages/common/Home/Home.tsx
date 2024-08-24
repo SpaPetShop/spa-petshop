@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Grid } from "@mui/material";
+import { Grid, Pagination } from "@mui/material";
 import { toast } from "react-toastify";
 import PetCard from "../../../components/home/component/card/PetCard";
 import FeaturedTitle from "../../../components/common/highlight/FeaturedTitle";
@@ -21,17 +21,16 @@ const Home: React.FC = () => {
   const [listProduct, setListProduct] = useState<ProductType[]>([]);
   const [filter, setFilter] = useState<FilterProductType>({
     page: 1,
-    size: 1000,
+    size: 8, // Update size to 8 to display only 8 items per page
     Status: "Available",
   });
   const [pagination, setPagination] = useState<PaginationType>({
     page: 1,
-    size: 1000,
+    size: 8,
     total: 0,
     totalPages: 1,
   });
   const navigate = useNavigate();
-
   const location = useLocation();
 
   const fetchAllProduct = useCallback(async () => {
@@ -63,7 +62,7 @@ const Home: React.FC = () => {
     console.log(responseCode)
 
     if (responseCode) {
-      if (responseCode == "00") {
+      if (responseCode === "00") {
         // Payment succeeded
         toast.success("Thanh toán thành công!");
 
@@ -81,9 +80,8 @@ const Home: React.FC = () => {
           });
 
           localStorage.removeItem("cart");
-
         }
-      } else if(responseCode != "00"){
+      } else if(responseCode !== "00"){
         // Payment failed
         toast.error("Thanh toán thất bại. Vui lòng thử lại.");
       }
@@ -99,32 +97,44 @@ const Home: React.FC = () => {
     ],
   };
 
-  console.log(listProduct)
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    setFilter((prevFilter) => ({ ...prevFilter, page }));
+  };
 
-  const renderProductGrid = (title: string, category: string) => (
+  useEffect(() => {
+    fetchAllProduct();
+  }, [filter.page]);
+
+  const renderProductGrid = (title: string) => (
     <section className={styles.section}>
       <h2 className={styles.title}>{title}</h2>
       <Grid container spacing={3}>
-        {listProduct
-          .filter((product) => product.category.name === category)
-          .map((product) => (
-            <PetCard
-              key={product.id}
-              pet={{
-                id: product.id,
-                name: product.name,
-                stockPrice: product.stockPrice,
-                sellingPrice: product.sellingPrice,
-                timeWork: product.timeWork,
-                status: product.status,
-                category: product.category,
-                image: product?.image?.[0]?.imageURL
-                  ? product.image[0].imageURL
-                  : defaultPetData.image[0].imageURL,
-              }}
-            />
-          ))}
+        {listProduct.map((product) => (
+          <PetCard
+            key={product.id}
+            pet={{
+              id: product.id,
+              name: product.name,
+              stockPrice: product.stockPrice,
+              sellingPrice: product.sellingPrice,
+              timeWork: product.timeWork,
+              status: product.status,
+              category: product.category,
+              image: product?.image?.[0]?.imageURL
+                ? product.image[0].imageURL
+                : defaultPetData.image[0].imageURL,
+            }}
+          />
+        ))}
       </Grid>
+      <div className={styles.pagination}>
+        <Pagination
+          count={pagination.totalPages}
+          page={filter.page}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      </div>
     </section>
   );
 
@@ -133,13 +143,10 @@ const Home: React.FC = () => {
       <LoadingComponentVersion2 open={isLoading} />
       <FeaturedTitle
         title="BOSS DỊCH VỤ"
-        subtitle="Các loại dịch vụ chăm sóc cho thú cưng của bạn"
+        subtitle="Các dịch vụ lẻ chăm sóc cho thú cưng của bạn"
       />
 
-      {renderProductGrid("Dịch vụ cho cún", "Chó")}
-      {renderProductGrid("Dịch vụ cho mèo", "Mèo")}
-      {renderProductGrid("Dịch vụ cho vẹt", "Vẹt")}
-      {renderProductGrid("Dịch vụ cho thỏ", "Thỏ")}
+      {renderProductGrid("Tất cả dịch vụ thú cưng")}
 
       <FeaturedTitle
         title="KHOẢNH KHẮC THÚ CƯNG"

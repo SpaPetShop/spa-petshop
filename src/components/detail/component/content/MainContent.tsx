@@ -78,9 +78,7 @@ const MainContent: React.FC<MainContentProps> = ({ product }) => {
             <b>Tình trạng:</b>{" "}
             {product.status === "AVAILABLE" ? "Còn chỗ" : "Hết chỗ"}
           </Typography>
-          <Typography variant="body1" className={styles.productStatus}>
-            <b>Lượt đánh giá:</b> 1880
-          </Typography>
+      
           <Typography variant="h5" className={styles.productPrice}>
             <b>Giá bán:</b>{" "}
             <Chip

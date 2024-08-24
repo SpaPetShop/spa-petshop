@@ -175,7 +175,7 @@ const DetailSpaCompoPage: React.FC = () => {
               }}
             />
             <Chip
-              label={combo.status === "AVAILABLE" ? "Có sẵn" : "Hết hàng"}
+              label={combo.status === "AVAILABLE" ? "Có sẵn" : "Tạm ngưng"}
               color={combo.status === "AVAILABLE" ? "success" : "error"}
               sx={{
                 position: "absolute",
@@ -201,9 +201,7 @@ const DetailSpaCompoPage: React.FC = () => {
                 Tình trạng:{" "}
                 {combo.status === "AVAILABLE" ? "Có sẵn" : "Hết hàng"}
               </Typography>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                Danh mục: {combo.category.name}
-              </Typography>
+              
               <Button
                 variant="contained"
                 color="primary"

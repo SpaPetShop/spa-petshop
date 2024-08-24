@@ -107,7 +107,7 @@ const Header: React.FC = () => {
           >
             Trang chủ
           </Link>
-          <Link
+          {/* <Link
             to={"/about"}
             style={{
               textDecoration: "none",
@@ -117,7 +117,7 @@ const Header: React.FC = () => {
             }}
           >
             Giới thiệu
-          </Link>
+          </Link> */}
           <Link
             to={"/spa-services"}
             style={{

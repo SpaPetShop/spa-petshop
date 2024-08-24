@@ -19,6 +19,7 @@ import ProductAPI from "../../../utils/ProductAPI";
 import { ComboType } from "../../../types/Combo/ComboType";
 import LoadingComponentVersion2 from "../../../components/common/loading/Backdrop";
 import SubProductAPI from "../../../utils/SubProductAPI";
+import styles from './OrderDetailsDialog.module.css';
 
 const DEFAULT_IMAGE_URL =
   "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png";
@@ -183,7 +184,7 @@ const CartSummary: React.FC = () => {
               </Typography>
               <Typography variant="h6">{formatCurrency(totalPrice)}</Typography>
             </Box>
-            <Box sx={{ mb: 2 }}>
+            {/* <Box sx={{ mb: 2 }}>
               <TextField
                 fullWidth
                 label="Mã giảm giá"
@@ -191,14 +192,14 @@ const CartSummary: React.FC = () => {
                 onChange={(e) => setPromoCode(e.target.value)}
                 placeholder="Nhập mã giảm giá"
               />
-            </Box>
+            </Box> */}
             <Divider sx={{ mb: 2 }} />
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" color="textSecondary">
-                Tổng thanh toán:
+                Số tiền đặt cọc:
               </Typography>
               <Typography variant="h5" sx={{ color: "primary.main" }}>
-                {formatCurrency(totalPrice)}
+                {formatCurrency(totalPrice*0.2)}
               </Typography>
             </Box>
             <Button
@@ -207,7 +208,7 @@ const CartSummary: React.FC = () => {
               fullWidth
               onClick={handleProceedToBooking}
             >
-              Thanh Toán
+              Tiến hành đặt lịch
             </Button>
           </Paper>
         </Box>

@@ -68,16 +68,7 @@ const PetCard: React.FC<{ pet: Pet }> = ({ pet }) => {
           >
             {pet.name}
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#888888",
-              textAlign: "center",
-              marginBottom: "8px",
-            }}
-          >
-            {pet.description || "No description available"}
-          </Typography>
+         
           <Typography
             variant="h6"
             sx={{ color: "#e67e22", fontWeight: "bold", textAlign: "center" }}

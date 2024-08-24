@@ -17,7 +17,7 @@ const BookingAPI = {
 
   // Fetch staff members
   getStaffList: (params?: any) => {
-    const url = "/accounts?Role=STAFF";
+    const url = "/accounts?Role=STAFF&page=1&size=30";
     return axiosClient.get<any, { items: StaffMember[] }>(url, {
       params,
       paramsSerializer: {
@@ -35,6 +35,11 @@ const BookingAPI = {
         indexes: null, // by default: false
       },
     });
+  },
+
+  getRequestByOrderId: (orderId: string) => {
+    const url = `/request?OrderId=${orderId}`;
+    return axiosClient.get<any, { items: any[] }>(url);
   },
 
   // Fetch bookings by customer ID

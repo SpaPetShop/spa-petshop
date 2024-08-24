@@ -21,7 +21,7 @@ const Sidebar: React.FC = () => {
       <ul className="sidebar-menu">
         <Link to="/spa-services" className="link">
           <div className="category-header">
-            <span>Dịch vụ spa</span>
+            <span>COMBO SPA</span>
           </div>
         </Link>
         {/* {serviceData.services.map((service, index) => (

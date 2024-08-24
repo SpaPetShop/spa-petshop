@@ -1,0 +1,70 @@
+/* OrderDetailsDialog.module.css */
+
+.dialogTitle {
+    background-color: #f0f0f0;
+    font-weight: bold;
+  }
+  
+  .dialogContent {
+    padding: 16px;
+  }
+  
+  .dialogItem {
+    margin-bottom: 16px;
+  }
+  
+  .dialogContentText {
+    font-size: 16px;
+    color: #333;
+  }
+  
+  .serviceList {
+    margin-left: 16px;
+  }
+  
+  .serviceItem {
+    margin-bottom: 8px;
+  }
+  
+  .orderRequest {
+    margin-left: 16px;
+    margin-bottom: 16px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .requestNote {
+    font-weight: bold;
+  }
+  
+  .requestStatus {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 16px;
+    color: #555;
+    padding: 4px 12px;
+    border-radius: 15px;
+  }
+  
+  .statusApproved {
+    color: green;
+    background-color: lightgreen;
+  }
+  
+  .statusRejected {
+    color: red;
+    background-color: lightcoral;
+  }
+  
+  .statusPending {
+    color: gray;
+    background-color: lightgray;
+  }
+  
+  .requestDate {
+    font-size: 14px;
+    color: #777;
+  }
+  

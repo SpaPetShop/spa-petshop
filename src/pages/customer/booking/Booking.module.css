@@ -117,3 +117,16 @@
   color: #aaa;
   cursor: not-allowed;
 }
+.serviceInfo {
+  display: flex;
+  align-items: center; /* Căn chỉnh dọc giữa các phần tử */
+  gap: 10px; /* Khoảng cách giữa label và p */
+}
+
+.serviceInfo label {
+  margin: 0; /* Loại bỏ margin mặc định của label */
+}
+
+.serviceInfo p {
+  margin: 0; /* Loại bỏ margin mặc định của p */
+}

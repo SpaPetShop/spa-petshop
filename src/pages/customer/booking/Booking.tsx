@@ -50,18 +50,6 @@ const bookingValidationSchema = Yup.object({
   }),
 });
 
-const generateTimeSlots = () => {
-  const slots = [];
-  let start = new Date();
-  start.setHours(9, 0, 0, 0);
-
-  while (start.getHours() < 21) {
-    slots.push(new Date(start));
-    start.setMinutes(start.getMinutes() + 30);
-  }
-
-  return slots;
-};
 
 const Booking: React.FC = () => {
   const selectedPet = JSON.parse(localStorage.getItem("selectedPet") || "{}");
@@ -174,10 +162,17 @@ const Booking: React.FC = () => {
 
   const checkTimeSlotAvailability = (slot: Date) => {
     const slotTime = format(slot, "yyyy-MM-dd'T'HH:mm:ss");
+    console.log("slotTime", slotTime);
 
+    console.log("selectedStaffTasks", ...selectedStaffTasks);
     if (formik.values.staffSelection === "manual" && formik.values.staffId) {
       return !selectedStaffTasks.some(
-        (task) => task.excutionDate === slotTime
+        (task) => task.excutionDate === slotTime || (
+          //disable slot if between estimatedCompletionDate and excutionDate
+          task?.estimatedCompletionDate &&
+          new Date(task?.excutionDate) < slot &&
+          new Date(task?.estimatedCompletionDate) > slot
+        )
       );
     } else if (formik.values.staffSelection === "auto") {
       // Check availability for all staff members
@@ -185,8 +180,15 @@ const Booking: React.FC = () => {
         const staffTasksForSlot = staffTasks.filter(
           (task) => task.staff.id === staff.id
         );
+        console.log(
+          staffTasksForSlot.map((task) => {
+            return task?.estimatedCompletionDate &&
+              new Date(task?.excutionDate) < slot &&
+              new Date(task?.estimatedCompletionDate) > slot
+          })
+        )
         return !staffTasksForSlot.some(
-          (task) => task.excutionDate === slotTime
+          (task) => task.excutionDate === slotTime 
         );
       });
     }
@@ -195,7 +197,16 @@ const Booking: React.FC = () => {
   };
 
   const generateFilteredTimeSlots = () => {
-    const slots = generateTimeSlots();
+    const slots = [];
+    //start is selected date
+    const start = new Date(formik.values.date);
+    start.setHours(9, 0, 0, 0);
+
+    while (start.getHours() < 21) {
+      slots.push(new Date(start));
+      start.setMinutes(start.getMinutes() + 30);
+    }
+
     return slots;
   };
 
@@ -325,7 +336,7 @@ const Booking: React.FC = () => {
 
           <TextField
             fullWidth
-            label="Họ và tên Boss"
+            label="Tên Boss"
             name="petName"
             value={formik.values.petName}
             onChange={formik.handleChange}
@@ -360,7 +371,7 @@ const Booking: React.FC = () => {
 
           <TextField
             fullWidth
-            label="Số kg của boss"
+            label="Cân nặng của boss"
             name="petWeight"
             type="number"
             value={formik.values.petWeight}
@@ -401,21 +412,24 @@ const Booking: React.FC = () => {
         <form className={styles.bookingForm} onSubmit={formik.handleSubmit}>
           <h3>DỊCH VỤ ĐÃ CHỌN</h3>
 
-          <h4>BOSS {formik.values.petName} đã đặt gói dịch vụ sau</h4>
+          <h4>Bạn đã đặt cho BOSS {formik.values.petName} đã đặt gói dịch vụ sau:</h4>
 
-          <label htmlFor="serviceCategory">Tên dịch vụ:</label>
-          <p>
-            {cartItems.length > 0 ? "Thanh toán giỏ hàng" : selectedPet.name}
-          </p>
+          <div className={styles.serviceInfo}>
+  <label htmlFor="serviceCategory">Tên dịch vụ:</label>
+  <p>
+    {cartItems.length > 0 ? "Thanh toán giỏ hàng" : selectedPet.name}
+  </p>
+</div>
 
-          <p>
-            {formatCurrency(
-              cartItems.length > 0
-                ? finalAmount * 0.2
-                : selectedPet.sellingPrice * 0.2
-            )}{" "}
-            VNĐ
-          </p>
+<p>
+  <strong> Số tiền đặt cọc:  </strong> 
+  {formatCurrency(
+    cartItems.length > 0
+      ? finalAmount * 0.2
+      : selectedPet.sellingPrice * 0.2
+  )}
+</p>
+
 
           <TextField
             fullWidth
@@ -453,39 +467,49 @@ const Booking: React.FC = () => {
           </FormControl>
 
           {formik.values.staffSelection === "manual" && (
-            <FormControl fullWidth margin="normal" variant="outlined">
-              <InputLabel shrink>Chọn nhân viên</InputLabel>
-              <Select
-                name="staffId"
-                value={formik.values.staffId}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                label="Chọn nhân viên"
-                style={{ padding: "10px 14px", fontSize: "16px" }}
-                inputProps={{
-                  style: { padding: "10px 14px", fontSize: "16px" },
-                }}
-              >
-                <MenuItem value="">Chọn nhân viên</MenuItem>
-                {staffList.map((staff) => (
-                  <MenuItem key={staff.id} value={staff.id}>
-                    {staff.fullName}
-                  </MenuItem>
-                ))}
-              </Select>
-              {formik.touched.staffId && formik.errors.staffId && (
-                <div className={styles.error}>{formik.errors.staffId}</div>
-              )}
-            </FormControl>
-          )}
+  <FormControl fullWidth margin="normal" variant="outlined">
+    <InputLabel shrink>Chọn nhân viên</InputLabel>
+    <Select
+      name="staffId"
+      value={formik.values.staffId}
+      onChange={formik.handleChange}
+      onBlur={formik.handleBlur}
+      label="Chọn nhân viên"
+      style={{
+        padding: "10px 10px",
+        fontSize: "16px",
+      }}
+      inputProps={{
+        style: { padding: "10px 10px", fontSize: "16px" },
+      }}
+      MenuProps={{
+        PaperProps: {
+          style: {
+            maxHeight: 200,
+            overflowY: "auto", 
+          },
+        },
+      }}
+    >
+      <MenuItem value="">Chọn nhân viên</MenuItem>
+      {staffList.map((staff) => (
+        <MenuItem key={staff.id} value={staff.id}>
+          {staff.fullName}
+        </MenuItem>
+      ))}
+    </Select>
+    {formik.touched.staffId && formik.errors.staffId && (
+      <div className={styles.error}>{formik.errors.staffId}</div>
+    )}
+  </FormControl>
+)}
 
           <div className={styles.timeSlotContainer}>
             <label>Chọn khung giờ dịch vụ</label>
             <div className={styles.timeSlots}>
               {timeSlots.map((slot) => {
                 const slotTime = format(slot, "HH:mm");
-                const isDisabled =
-                  isToday && slot.getTime() < currentTime.getTime();
+                const isDisabled = slot < new Date()
 
                 const isAvailable = checkTimeSlotAvailability(slot);
 
@@ -530,10 +554,10 @@ const Booking: React.FC = () => {
               color: "white",
             }}
           >
-            Đặt lịch ngay
+            Thanh Toán Tiển Cọc
           </Button>
 
-          {isBookingSuccess && (
+          {/* {isBookingSuccess && (
             <div className={styles.actionButtons}>
               <Button
                 variant="contained"
@@ -554,7 +578,7 @@ const Booking: React.FC = () => {
                 Xem đơn hàng của tôi
               </Button>
             </div>
-          )}
+          )} */}
         </form>
       )}
     </>

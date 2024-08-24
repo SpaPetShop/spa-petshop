@@ -52,6 +52,8 @@ const Profile: React.FC = () => {
   const [reload, setReload] = useState(false);
   const [filter, setFilter] = useState<string>("All");
 
+  const [orderRequests, setOrderRequests] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchPetList = async () => {
       try {
@@ -63,6 +65,8 @@ const Profile: React.FC = () => {
     };
     fetchPetList();
   }, [userData.id]);
+
+  
 
   const generateTimeSlots = () => {
     const slots = [];
@@ -97,8 +101,21 @@ const Profile: React.FC = () => {
         console.error("Error fetching booking list:", error);
       }
     };
+    
     fetchBookingList();
   }, [userData.id, reload]);
+
+  useEffect(() => {
+    const fetchRequest = async (orderId: string) => {
+      try {
+        const response = await bookingAPI.getRequestByOrderId(orderId);
+        setOrderRequests(response?.items || []);
+      } catch (error) {
+        console.error("Error fetching request:", error);
+      }
+    }
+    fetchRequest(selectedOrder?.orderId);
+  }, [selectedOrder]);
 
   useEffect(() => {
     if (openStaffDialog) {
@@ -225,14 +242,14 @@ const Profile: React.FC = () => {
       case "UNPAID":
         return (
           <Chip
-            label="Chưa thanh toán"
+            label="Chưa đặt cọc"
             sx={{ backgroundColor: orange[500], color: "white" }}
           />
         );
       case "PAID":
         return (
           <Chip
-            label="Đã thanh toán"
+            label="Đã đặt cọc"
             sx={{ backgroundColor: green[500], color: "white" }}
           />
         );
@@ -283,8 +300,8 @@ const Profile: React.FC = () => {
                 label="Lọc theo trạng thái"
               >
                 <MenuItem value="All">Tất cả</MenuItem>
-                <MenuItem value="UNPAID">Chưa thanh toán</MenuItem>
-                <MenuItem value="PAID">Đã thanh toán</MenuItem>
+                <MenuItem value="UNPAID">Chưa đặt cọc</MenuItem>
+                <MenuItem value="PAID">Đã đặt cọc</MenuItem>
                 <MenuItem value="COMPLETED">Đã hoàn thành</MenuItem>
                 <MenuItem value="CANCELED">Đã hủy</MenuItem>
               </Select>
@@ -375,7 +392,7 @@ const Profile: React.FC = () => {
         <DialogTitle sx={{ backgroundColor: red[100], fontWeight: "bold" }}>Hủy Đơn Hàng</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Bạn có chắc chắn muốn hủy đơn hàng này? Vui lòng nhập ghi chú và mô tả lý do hủy.
+            Bạn có chắc chắn muốn hủy đơn hàng này? Vui lòng nhập lý do hủy.
           </DialogContentText>
           <TextField
             autoFocus
@@ -386,14 +403,14 @@ const Profile: React.FC = () => {
             value={cancelNote}
             onChange={(e) => setCancelNote(e.target.value)}
           />
-          <TextField
+          {/* <TextField
             margin="dense"
             label="Mô tả"
             fullWidth
             variant="outlined"
             value={cancelDescription}
             onChange={(e) => setCancelDescription(e.target.value)}
-          />
+          /> */}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog} color="primary">
@@ -419,6 +436,14 @@ const Profile: React.FC = () => {
               onChange={(e) => setSelectedStaffId(e.target.value)}
               label="Đổi nhân viên"
               disabled={selectedOrder?.type === "MANAGERREQUEST"}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 200, // Set the maximum height for the dropdown
+                    overflowY: "auto", // Enable vertical scrolling
+                  },
+                },
+              }}
             >
               {staffList.map((staff) => (
                 <MenuItem key={staff.id} value={staff.id}>
@@ -463,6 +488,16 @@ const Profile: React.FC = () => {
             })}
             </div>
           </div>
+          <TextField
+              fullWidth
+              label="Ghi chú"
+              name="note"
+              multiline
+              rows={4}
+              value={cancelNote}
+              onChange={(e) => setCancelNote(e.target.value)}
+              margin="normal"
+            />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseStaffDialog} color="primary">
@@ -479,9 +514,6 @@ const Profile: React.FC = () => {
         <DialogContent>
           {selectedOrder ? (
             <Box sx={{ p: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Mã Đơn Hàng: {selectedOrder.orderId}
-              </Typography>
               <Typography variant="subtitle1" gutterBottom>
                 Mã Hóa Đơn: {selectedOrder.invoiceCode}
               </Typography>
@@ -526,6 +558,39 @@ const Profile: React.FC = () => {
                   </Box>
                 )) || "N/A"}
               </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+  Danh Sách Yêu Cầu:
+  {orderRequests?.length > 0 ? (
+    orderRequests.map((request: any) => (
+      <Box key={request.id} sx={{ ml: 2, mb: 1, padding: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)" }}>
+        <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+          Ghi chú: {request.note}
+        </Typography>
+        <Typography variant="body2" sx={{ display: "inline-block", marginRight: "8px", fontSize: "16px", color: "#555" }}>
+          Trạng thái:
+          <span
+            style={{
+              color: request.status === "APPROVED" ? "green" : request.status === "REJECTED" ? "red" : "gray",
+              backgroundColor: request.status === "APPROVED" ? "lightgreen" : request.status === "REJECTED" ? "lightcoral" : "lightgray",
+              padding: "4px 12px",
+              borderRadius: "15px",
+              fontSize: "14px",
+              marginLeft: "8px",
+            }}
+          >
+            {request.status}
+          </span>
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: "14px", color: "#777" }}>
+          Ngày tạo: {format(parseISO(request.createDate), "dd-MM-yyyy HH:mm")}
+        </Typography>
+      </Box>
+    ))
+  ) : (
+    "Không có yêu cầu nào."
+  )}
+</Typography>
+
             </Box>
           ) : (
             <DialogContentText>Không tìm thấy thông tin đơn hàng.</DialogContentText>
@@ -537,6 +602,7 @@ const Profile: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
     </Container>
   );
 };

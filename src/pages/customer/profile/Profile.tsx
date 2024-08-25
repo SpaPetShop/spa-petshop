@@ -368,6 +368,7 @@ const Profile: React.FC = () => {
                             onClick={() => handleDeleteClick(booking)}
                             disabled={
                               booking.status === "CANCELED" ||
+                              booking.status === "COMPLETED" ||
                               (isPast(parseISO(booking.createdDate)) &&
                                 !isSameDay(
                                   parseISO(booking.createdDate),
@@ -387,7 +388,7 @@ const Profile: React.FC = () => {
           )}
         </Grid>
       </Grid>
-
+      
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ backgroundColor: red[100], fontWeight: "bold" }}>Hủy Đơn Hàng</DialogTitle>
         <DialogContent>
@@ -412,16 +413,19 @@ const Profile: React.FC = () => {
             onChange={(e) => setCancelDescription(e.target.value)}
           /> */}
         </DialogContent>
+    
         <DialogActions>
+            
           <Button onClick={handleCloseDialog} color="primary">
             Hủy bỏ
           </Button>
           <Button color="error" onClick={handleConfirmDelete}>
             Xác nhận
           </Button>
-        </DialogActions>
+          
+        </DialogActions>  
       </Dialog>
-
+      
       <Dialog open={openStaffDialog} onClose={handleCloseStaffDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ backgroundColor: blue[100], fontWeight: "bold" }}>
           {selectedOrder?.type === "MANAGERREQUEST"

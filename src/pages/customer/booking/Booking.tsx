@@ -292,7 +292,7 @@ const Booking: React.FC = () => {
         amount: amount,
         paymentType: "VNPAY",
         callbackUrl:
-          process.env.REACT_APP_URL_CLIENT || "http://localhost:3000",
+          process.env.REACT_APP_URL_CLIENT || "https://spa-petshop.vercel.app/",
         accountId: userData.id,
       })) as any;
 
